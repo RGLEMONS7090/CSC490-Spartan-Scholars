@@ -1,0 +1,113 @@
+<!-- frontend/index.html -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Spartan Scholars</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand__icon">🏛️</div>
+      <div class="brand__name">
+        <span class="brand__main">Spartan</span>
+        <span class="brand__sub">Scholars</span>
+      </div>
+    </div>
+
+    <div class="topbar__right">
+      <button id="sidebarToggle" class="iconBtn" type="button" aria-label="Toggle sidebar">☰</button>
+      <button class="iconBtn" type="button" aria-label="Theme toggle">🌙</button>
+      <button class="profileBtn" type="button">
+        <span class="profileBtn__icon">👤</span>
+        <span class="profileBtn__text">Profile</span>
+      </button>
+    </div>
+  </header>
+
+  <div id="appShell" class="shell">
+    <aside id="appSidebar" class="sidebar">
+      <button class="askAiBtn" type="button">
+        <span class="askAiBtn__spark">✨</span>
+        Ask AI
+      </button>
+
+      <hr class="sidebar__divider" />
+
+      <nav class="nav">
+        <a class="nav__item" href="#">My Notes</a>
+        <a class="nav__item" href="#">Take Quizzes</a>
+        <a class="nav__item" href="#">Explore Topics</a>
+        <a class="nav__item" href="#">Discussion Board</a>
+        <a class="nav__item" href="#">View Analytics</a>
+        <a class="nav__item" href="#">Study Groups</a>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <section class="hero">
+        <h1>Welcome to Spartan Scholars</h1>
+        <p>Your all-in-one study platform for notes, discussions, and AI-powered learning.</p>
+      </section>
+
+      <section class="section">
+        <div class="row g-4">
+          <div class="col-12 col-md-6 col-xl-4">
+            <article class="featureCard h-100">
+              <div class="featureCard__iconWrap"><span class="featureCard__icon">📄</span></div>
+              <h2>Notes &amp; Summaries</h2>
+              <p>Create and organize study notes with fast search and tagging.</p>
+              <ul class="bullets">
+                <li><span class="dot dot--green"></span>2 notes saved</li>
+                <li><span class="dot dot--blue"></span>Rich text editor</li>
+                <li><span class="dot dot--blue"></span>Categories &amp; tags</li>
+              </ul>
+              <button class="primaryBtn" type="button">Get Started <span class="arrow">→</span></button>
+            </article>
+          </div>
+
+          <div class="col-12 col-md-6 col-xl-4">
+            <article class="featureCard h-100">
+              <div class="featureCard__iconWrap featureCard__iconWrap--purple"><span class="featureCard__icon">💭</span></div>
+              <h2>Discussion Board</h2>
+              <p>Join communities, ask questions, and collaborate with peers.</p>
+              <ul class="bullets">
+                <li><span class="dot dot--green"></span>Active communities</li>
+                <li><span class="dot dot--blue"></span>Topic threads</li>
+                <li><span class="dot dot--blue"></span>Peer support</li>
+              </ul>
+              <button class="primaryBtn" type="button">Get Started <span class="arrow">→</span></button>
+            </article>
+          </div>
+
+          <div class="col-12 col-md-6 col-xl-4">
+            <article class="featureCard h-100">
+              <div class="featureCard__iconWrap featureCard__iconWrap--gold"><span class="featureCard__icon">✨</span></div>
+              <h2>AI Note Summarizer</h2>
+              <p>Turn notes into summaries, flashcards, and key points in seconds.</p>
+              <ul class="bullets">
+                <li><span class="dot dot--green"></span>Auto summaries</li>
+                <li><span class="dot dot--blue"></span>Flashcard generation</li>
+                <li><span class="dot dot--blue"></span>Key concept extraction</li>
+              </ul>
+              <button class="primaryBtn" type="button">Get Started <span class="arrow">→</span></button>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const shell = document.getElementById("appShell");
+    document.getElementById("sidebarToggle").addEventListener("click", () => {
+      shell.classList.toggle("shell--collapsed");
+    });
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
