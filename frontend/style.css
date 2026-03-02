@@ -61,6 +61,12 @@ body{
 .brand__main{ color: var(--brandBlue); }
 .brand__sub{ color: #2b2b2b; font-weight: 500; }
 
+.topbar__left{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .topbar__right{ display: flex; align-items: center; gap: 10px; }
 
 .iconBtn{
@@ -102,6 +108,10 @@ body{
 
 .shell--assistant{
   grid-template-columns: 280px 1fr;
+}
+
+.shell--assistant.shell--collapsed{
+  grid-template-columns: 0 1fr;
 }
 
 .sidebar{
