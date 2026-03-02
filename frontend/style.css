@@ -85,7 +85,7 @@ body{
 
 .brand{
   display: flex;
-  gap: 10px;
+  gap: 2px;
   align-items: center;
 }
 
@@ -109,8 +109,15 @@ body{
   width: 100%;
   height: 100%;
   object-fit: contain;
-  transform: scale(2.9);
   transform-origin: center;
+}
+
+.brand__logo--light{
+  transform: scale(2.9);
+}
+
+.brand__logo--dark{
+  transform: scale(2.2);
 }
 
 .brand__logo--dark{
@@ -130,7 +137,7 @@ body{
   width: auto;
   object-fit: contain;
   display: block;
-  transform: scale(2.65);
+  transform: translateX(-12px) scale(2.65);
   transform-origin: left center;
 }
 
@@ -807,6 +814,26 @@ body{
   font-weight: 700;
 }
 
+.notesHeader__icon--image{
+  width: 110px;
+  height: 110px;
+  border: none;
+  background: transparent;
+  overflow: visible;
+}
+
+.notesHeader__logo{
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: scale(1.95);
+  transform-origin: center;
+}
+
+.notesHeader__logo--dark{
+  display: none;
+}
+
 .notesHeader h1,
 .groupsHeader h1,
 .quizzesHeader h1{
@@ -1129,6 +1156,14 @@ body{
 }
 
 :root[data-theme="dark"] .brand__wordmark--dark{
+  display: block;
+}
+
+:root[data-theme="dark"] .notesHeader__logo--light{
+  display: none;
+}
+
+:root[data-theme="dark"] .notesHeader__logo--dark{
   display: block;
 }
 
