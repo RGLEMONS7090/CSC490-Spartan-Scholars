@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Discussion Board | Spartan Scholars</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar__left">
+      <button id="discussionSidebarToggle" class="iconBtn" type="button" aria-label="Toggle sidebar">&#9776;</button>
+      <a class="brand brand--link" href="index.html" aria-label="Go to Spartan Scholars home">
+        <div class="brand__icon">SS</div>
+        <div class="brand__name">
+          <span class="brand__main">Spartan</span>
+          <span class="brand__sub">Scholars</span>
+        </div>
+      </a>
+    </div>
+
+    <div class="topbar__right">
+      <button class="iconBtn" type="button" aria-label="Theme toggle">&#9789;</button>
+      <button class="profileBtn" type="button">
+        <span class="profileBtn__icon">P</span>
+        <span class="profileBtn__text">Profile</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="shell shell--assistant">
+    <aside class="sidebar">
+      <a class="askAiBtn" href="ai-assistant.html">
+        <span class="askAiBtn__spark">*</span>
+        Ask AI
+      </a>
+
+      <hr class="sidebar__divider" />
+
+      <nav class="nav">
+        <a class="nav__item" href="notes-summaries.html">My Notes</a>
+        <a class="nav__item" href="study-groups.html">Study Groups</a>
+        <a class="nav__item" href="take-quizzes.html">Take Quizzes</a>
+        <a class="nav__item" href="explore-topics.html">Explore Topics</a>
+        <a class="nav__item nav__item--active" href="discussion-board.html" aria-current="page">Discussion Board</a>
+        <a class="nav__item" href="#">View Analytics</a>
+      </nav>
+    </aside>
+
+    <main class="main main--discussion">
+      <section class="discussionTop">
+        <div>
+          <div class="discussionTitle">
+            <div class="discussionTitle__icon">D</div>
+            <h1>Discussion Board</h1>
+          </div>
+          <p class="discussionTop__subtitle">Ask questions and share knowledge with the community</p>
+        </div>
+
+        <button type="button" class="discussionTop__button">+ New Discussion</button>
+      </section>
+
+      <section class="discussionFilters">
+        <button type="button" class="discussionFilters__chip discussionFilters__chip--active">All Discussions</button>
+        <button type="button" class="discussionFilters__chip">Trending</button>
+        <button type="button" class="discussionFilters__chip">Recent</button>
+      </section>
+
+      <section class="discussionList">
+        <article class="discussionCard">
+          <div class="discussionCard__top">
+            <div class="discussionCard__avatar">SC</div>
+            <div class="discussionCard__body">
+              <div class="discussionCard__tags">
+                <span class="discussionTag">Computer Science</span>
+                <span class="discussionTag discussionTag--trending">Trending</span>
+              </div>
+              <h2>How to approach Big O notation problems?</h2>
+              <p class="discussionCard__author">by Sarah Chen</p>
+              <p class="discussionCard__text">I understand the basics of Big O notation but struggle with analyzing complex algorithms. Any tips or resources you'd recommend?</p>
+              <div class="discussionCard__meta">
+                <span>45</span>
+                <span>24 replies</span>
+              </div>
+            </div>
+            <div class="discussionCard__time">2 hours ago</div>
+          </div>
+        </article>
+
+        <article class="discussionCard">
+          <div class="discussionCard__top">
+            <div class="discussionCard__avatar">MJ</div>
+            <div class="discussionCard__body">
+              <div class="discussionCard__tags">
+                <span class="discussionTag">Chemistry</span>
+              </div>
+              <h2>Study group for Organic Chemistry exam</h2>
+              <p class="discussionCard__author">by Mike Johnson</p>
+              <p class="discussionCard__text">Looking for students to form a study group for the upcoming organic chemistry midterm. Meeting times flexible!</p>
+              <div class="discussionCard__meta">
+                <span>28</span>
+                <span>12 replies</span>
+              </div>
+            </div>
+            <div class="discussionCard__time">4 hours ago</div>
+          </div>
+        </article>
+
+        <article class="discussionCard">
+          <div class="discussionCard__top">
+            <div class="discussionCard__avatar">ER</div>
+            <div class="discussionCard__body">
+              <div class="discussionCard__tags">
+                <span class="discussionTag">Mathematics</span>
+                <span class="discussionTag discussionTag--trending">Trending</span>
+              </div>
+              <h2>Best resources for learning calculus?</h2>
+              <p class="discussionCard__author">by Emily Rodriguez</p>
+              <p class="discussionCard__text">Starting calculus next semester and want to get ahead. What are the best online resources or textbooks?</p>
+              <div class="discussionCard__meta">
+                <span>36</span>
+                <span>18 replies</span>
+              </div>
+            </div>
+            <div class="discussionCard__time">6 hours ago</div>
+          </div>
+        </article>
+
+        <article class="discussionCard">
+          <div class="discussionCard__top">
+            <div class="discussionCard__avatar">JW</div>
+            <div class="discussionCard__body">
+              <div class="discussionCard__tags">
+                <span class="discussionTag">Anatomy</span>
+              </div>
+              <h2>What helped you memorize anatomy structures?</h2>
+              <p class="discussionCard__author">by Jordan Walker</p>
+              <p class="discussionCard__text">I am trying to find better ways to retain diagrams and terminology before lab practicals. Flashcards help, but I need something more effective.</p>
+              <div class="discussionCard__meta">
+                <span>19</span>
+                <span>9 replies</span>
+              </div>
+            </div>
+            <div class="discussionCard__time">8 hours ago</div>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const discussionShell = document.querySelector(".shell");
+    document.getElementById("discussionSidebarToggle").addEventListener("click", () => {
+      discussionShell.classList.toggle("shell--collapsed");
+    });
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
