@@ -1030,6 +1030,81 @@ body{
   color: var(--white);
 }
 
+/* Analytics page */
+.analyticsHeaderActions{
+  display: flex;
+  gap: 12px;
+}
+
+.analyticsHeaderActions__button{
+  min-width: 130px;
+}
+
+.analyticsStats{
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.analyticsPanels{
+  margin-bottom: 24px;
+}
+
+.analyticsChartWrap{
+  position: relative;
+  min-height: 260px;
+}
+
+.analyticsUpload{
+  display: grid;
+  gap: 12px;
+}
+
+.analyticsUpload__input{
+  border: 2px solid rgba(155,122,79,.35);
+  border-radius: 10px;
+  background: rgba(255,255,255,.68);
+}
+
+.analyticsUpload__hint{
+  margin: 0;
+  color: #667085;
+  font-size: 14px;
+}
+
+.analyticsTable{
+  margin-top: 8px;
+  color: var(--text);
+}
+
+.analyticsTable thead th{
+  border-bottom: 2px solid rgba(155,122,79,.45);
+  color: #2f66e3;
+  font-weight: 700;
+}
+
+.analyticsTable tbody td{
+  border-bottom: 1px solid rgba(155,122,79,.25);
+}
+
+.analyticsStatus{
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.analyticsStatus--great{
+  background: rgba(34,197,94,.18);
+  color: #166534;
+}
+
+.analyticsStatus--review{
+  background: rgba(234,179,8,.22);
+  color: #854d0e;
+}
+
 /* Responsive */
 @media (max-width: 992px){
   .hero h1{ font-size: 40px; }
@@ -1073,6 +1148,13 @@ body{
   .quizGrid,
   .groupsGrid,
   .quizStats{ grid-template-columns: 1fr; }
+  .analyticsHeaderActions{
+    width: 100%;
+    flex-direction: column;
+  }
+  .analyticsHeaderActions__button{
+    width: 100%;
+  }
   .noteCard__footer{
     flex-direction: column;
     align-items: flex-start;
