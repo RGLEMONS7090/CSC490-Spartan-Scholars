@@ -1135,7 +1135,6 @@ body{
   color: var(--white);
 }
 
-<<<<<<< HEAD
 /* Analytics page */
 .analyticsHeaderActions{
   display: flex;
@@ -1209,7 +1208,6 @@ body{
 .analyticsStatus--review{
   background: rgba(234,179,8,.22);
   color: #854d0e;
-=======
 :root[data-theme="dark"] .profileBtn{
   background: rgba(59,130,246,.18);
 }
@@ -1256,7 +1254,6 @@ body{
 
 :root[data-theme="dark"] .askAiBtn{
   box-shadow: 0 8px 18px rgba(0,0,0,.25);
->>>>>>> 5d593d0368cacaa3ebdcb44ac894783755c8ad7e
 }
 
 /* Responsive */
@@ -1313,4 +1310,5 @@ body{
     flex-direction: column;
     align-items: flex-start;
   }
+}
 }
