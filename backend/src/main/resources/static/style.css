@@ -171,6 +171,18 @@ body{
   background: rgba(29,79,174,.15);
 }
 
+.logoutBtn{
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--borderSoft);
+  background: var(--surfaceSoft);
+  color: var(--text);
+  cursor: pointer;
+  text-decoration: none;
+}
+
 .profileBtn__icon{
   width: 28px;
   height: 28px;
@@ -1137,6 +1149,11 @@ body{
 
 :root[data-theme="dark"] .profileBtn{
   background: rgba(59,130,246,.18);
+}
+
+:root[data-theme="dark"] .logoutBtn{
+  background: var(--surface);
+  border-color: var(--borderStrong);
 }
 
 :root[data-theme="dark"] .brand__icon{

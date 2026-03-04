@@ -24,4 +24,12 @@ document.addEventListener("DOMContentLoaded", () => {
       applyTheme(nextTheme);
     });
   });
+
+  document.querySelectorAll("[data-logout]").forEach((button) => {
+    button.addEventListener("click", () => {
+      localStorage.removeItem("token");
+      localStorage.removeItem("mockUser");
+      window.location.href = "login.html";
+    });
+  });
 });
