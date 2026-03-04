@@ -11,8 +11,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Service;
@@ -24,16 +22,19 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
     private final SecurityContextLogoutHandler logoutHandler = new SecurityContextLogoutHandler();
 
     public AuthService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
-            AuthenticationManager authenticationManager
+            AuthenticationManager authenticationManager,
+            JwtService jwtService
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
+        this.jwtService = jwtService;
     }
 
     @Transactional
@@ -49,7 +50,8 @@ public class AuthService {
         user.setRole(Role.USER);
 
         User savedUser = userRepository.save(user);
-        return AuthResponse.from(savedUser);
+        String token = jwtService.generateToken(savedUser.getEmail());
+        return AuthResponse.from(savedUser, token);
     }
 
     public AuthResponse login(LoginRequest request, HttpServletRequest httpRequest) {
@@ -60,14 +62,9 @@ public class AuthService {
                 )
         );
 
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(authentication);
-        SecurityContextHolder.setContext(context);
-        httpRequest.getSession(true);
-        httpRequest.getSession().setAttribute("SPRING_SECURITY_CONTEXT", context);
-
         User user = (User) authentication.getPrincipal();
-        return AuthResponse.from(user);
+        String token = jwtService.generateToken(user.getEmail());
+        return AuthResponse.from(user,token);
     }
 
     public void logout(
@@ -83,6 +80,7 @@ public class AuthService {
             throw new UnauthenticatedException("You must be logged in to access this resource.");
         }
 
-        return AuthResponse.from(user);
+        String token = jwtService.generateToken(user.getEmail());
+        return AuthResponse.from(user, token);
     }
 }

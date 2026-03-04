@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login - Spartan Scholars</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="topbar__left">
+        <button id="sidebarToggle" class="iconBtn" type="button" aria-label="Toggle sidebar">&#9776;</button>
+        <a class="brand brand--link" href="index.html" aria-label="Go to Spartan Scholars home">
+          <div class="brand__icon">
+            <img class="brand__logo brand__logo--light" src="assets/ChatGPT Image Mar 2, 2026, 02_52_17 PM-Photoroom.png" alt="Spartan Scholars logo" />
+            <img class="brand__logo brand__logo--dark" src="assets/ChatGPT Image Mar 2, 2026, 02_54_16 PM-Photoroom.png" alt="Spartan Scholars logo" />
+          </div>
+          <div class="brand__name">
+            <img class="brand__wordmark brand__wordmark--light" src="assets/ChatGPT Image Mar 2, 2026, 02_52_21 PM-Photoroom.png" alt="Spartan Scholars" />
+            <img class="brand__wordmark brand__wordmark--dark" src="assets/ChatGPT Image Mar 2, 2026, 03_06_15 PM-Photoroom.png" alt="Spartan Scholars" />
+          </div>
+        </a>
+    </div>
+    
+    <div class="topbar__right">
+        <button class="iconBtn" type="button" data-theme-toggle aria-label="Switch to dark mode">&#9789;</button>
+        <button class="logoutBtn" type="button" data-logout>Logout</button>
+        <button class="profileBtn" type="button">
+            <span class="profileBtn__icon">P</span>
+            <span class="profileBtn__text">Profile</span>
+        </button>
+    </div>
+  </header>
+  
+    <main class="d-flex justify-content-center align-items-center" style="min-height: 90vh;">
+      <div class="card shadow p-4" style="max-width: 420px; width: 100%;">
+        <h2 class="text-center mb-4">Login</h2>
+  
+        <form id="loginForm">
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" id="email" required />
+          </div>
+  
+          <div class="mb-3">
+            <label class="form-label">Password</label>
+            <input type="password" class="form-control" id="password" required />
+          </div>
+  
+          <button type="submit" class="btn btn-primary w-100">Login</button>
+  
+          <p class="text-center mt-3">
+            Don’t have an account?
+            <a href="signup.html">Sign up</a>
+        </p>
+    </form>
+  </div>
+</main>
+
+<script src="theme.js"></script>
+<script src="js/login.js"></script>
+</body>
+</html>
+  
+
