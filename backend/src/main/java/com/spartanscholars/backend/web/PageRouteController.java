@@ -42,6 +42,11 @@ public class PageRouteController {
         return "forward:/discussion-board.html";
     }
 
+    @GetMapping("/discussion-board/new")
+    public String newDiscussion() {
+        return "forward:/discussion-new.html";
+    }
+
     @GetMapping("/analytics")
     public String analytics() {
         return "forward:/analytics.html";

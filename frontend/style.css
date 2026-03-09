@@ -161,6 +161,43 @@ body{
   color: var(--text);
 }
 
+.topbar__left .iconBtn{
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--borderSoft);
+  border-radius: 0;
+  background: var(--surfaceStrong);
+  position: fixed;
+  top: 65px;
+  left: 279px;
+  z-index: 35;
+  font-size: 0;
+  color: transparent;
+  transition: left .25s ease, background .2s ease, border-color .2s ease, transform .2s ease;
+}
+
+.topbar__left .iconBtn::before{
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 18px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--text);
+  box-shadow: 0 -6px 0 var(--text), 0 6px 0 var(--text);
+}
+
+.topbar__left .iconBtn:hover{
+  background: var(--surfaceInput);
+  border-color: var(--borderStrong);
+  transform: translateY(-1px);
+}
+
+body:has(.shell--collapsed) .topbar__left .iconBtn{
+  left: 0;
+}
+
 .profileBtn{
   display: inline-flex;
   align-items: center;
@@ -216,6 +253,13 @@ body{
   border-right: 1px solid var(--sidebarBorder);
   padding: 16px 14px;
   overflow: hidden;
+  min-width: 0;
+  transition: padding .2s ease, border-color .2s ease;
+}
+
+.shell--collapsed .sidebar{
+  padding: 0;
+  border-right-color: transparent;
 }
 
 .askAiBtn{
@@ -225,7 +269,7 @@ body{
   justify-content: center;
   gap: 10px;
   padding: 12px 14px;
-  border-radius: 10px;
+  border-radius: 12px;
   border: 1px solid rgba(0,0,0,.1);
   background: linear-gradient(90deg, #7a3cff, #2a61ff);
   color: #fff;
@@ -236,7 +280,7 @@ body{
 .askAiBtn__spark{
   width: 28px;
   height: 28px;
-  border-radius: 10px;
+  border-radius: 12px;
   background: rgba(255,255,255,.18);
   display: grid;
   place-items: center;
@@ -258,7 +302,7 @@ body{
   text-decoration: none;
   color: var(--text);
   padding: 10px;
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 .nav__item:hover{ background: var(--navHover); }
@@ -352,7 +396,7 @@ body{
   width: 100%;
   height: 46px;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--btnBlue);
   color: var(--white);
   font-weight: 700;
@@ -1177,7 +1221,7 @@ body{
 
 .analyticsUpload__input{
   border: 2px solid rgba(155,122,79,.35);
-  border-radius: 10px;
+  border-radius: 12px;
   background: rgba(255,255,255,.68);
 }
 
@@ -1293,6 +1337,9 @@ body{
     flex-direction: column;
     align-items: stretch;
   }
+  .topbar__left .iconBtn{
+    position: static;
+  }
   .discussionTitle h1{ font-size: 30px; }
   .discussionTop__button{ width: 100%; }
   .discussionCard__top{
@@ -1329,3 +1376,12 @@ body{
   }
 }
 }
+
+
+
+
+
+
+
+
+
