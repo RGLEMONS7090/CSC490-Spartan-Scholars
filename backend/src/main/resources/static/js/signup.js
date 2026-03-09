@@ -23,7 +23,7 @@ document.getElementById("signupForm").addEventListener("submit", async (e) => {
       localStorage.setItem("token", data.token);
 
       // Redirect to homepage or dashboard
-      window.location.href = "/index.html";
+      window.location.href = "/";
   
     } catch (err) {
       console.error(err);

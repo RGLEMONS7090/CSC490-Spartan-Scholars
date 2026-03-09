@@ -22,7 +22,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       localStorage.setItem("token", data.token);
   
       // Redirect to homepage or dashboard
-      window.location.href = "/index.html";
+      window.location.href = "/";
 
     } catch (error) {
       console.error("Login error:", error);

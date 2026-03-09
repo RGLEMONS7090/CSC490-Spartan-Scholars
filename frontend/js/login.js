@@ -18,9 +18,10 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
 
     const data = await response.json();
     localStorage.setItem("token", data.token);
-    window.location.href = "index.html";
+    window.location.href = "/";
   } catch (error) {
     console.error("Login error:", error);
     alert("Something went wrong. Try again.");
   }
 });
+

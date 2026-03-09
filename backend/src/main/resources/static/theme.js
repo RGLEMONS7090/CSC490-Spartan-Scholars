@@ -29,7 +29,8 @@ document.addEventListener("DOMContentLoaded", () => {
     button.addEventListener("click", () => {
       localStorage.removeItem("token");
       localStorage.removeItem("mockUser");
-      window.location.href = "login.html";
+      window.location.href = "/login";
     });
   });
 });
+
