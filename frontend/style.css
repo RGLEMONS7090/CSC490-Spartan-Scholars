@@ -1264,6 +1264,8 @@ body:has(.shell--collapsed) .topbar__left .iconBtn{
 .analyticsStatus--review{
   background: rgba(234,179,8,.22);
   color: #854d0e;
+}
+
 :root[data-theme="dark"] .profileBtn{
   background: rgba(59,130,246,.18);
 }
@@ -1316,6 +1318,111 @@ body:has(.shell--collapsed) .topbar__left .iconBtn{
 :root[data-theme="dark"] .askAiBtn{
   box-shadow: 0 8px 18px rgba(0,0,0,.25);
 }
+
+/* 
+   Auth pages (Login / Signup) */
+
+body.auth-screen{
+  min-height: 100vh;
+}
+
+.auth-page{
+  min-height: calc(100vh - 66px);
+  padding: 32px 16px;
+  background:
+    linear-gradient(rgba(15, 23, 42, 0.45), rgba(15, 23, 42, 0.45)),
+    url("assets/signup-bg.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.auth-card{
+  border: 1px solid var(--borderSoft);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18) !important;
+}
+
+.auth-screen .form-label{
+  color: var(--text);
+  font-weight: 600;
+}
+
+.auth-screen .form-control{
+  min-height: 48px;
+  border-radius: 12px;
+  border: 1px solid var(--borderSoft);
+  background: rgba(255,255,255,0.92);
+  color: var(--text);
+}
+
+.auth-screen .form-control:focus{
+  border-color: var(--activeNav);
+  box-shadow: 0 0 0 0.2rem rgba(47, 102, 227, 0.18);
+}
+
+.auth-screen .btn-primary{
+  min-height: 48px;
+  border: none;
+  border-radius: 12px;
+  background: var(--btnBlue);
+  font-weight: 700;
+}
+
+.auth-screen .btn-primary:hover{
+  background: var(--btnBlueHover);
+}
+
+.auth-screen .card a{
+  color: var(--activeNav);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-screen .card a:hover{
+  text-decoration: underline;
+}
+
+.auth-screen .logoutBtn,
+.auth-screen .profileBtn{
+  display: none;
+}
+
+/* Dark mode auth page */
+:root[data-theme="dark"] .auth-page{
+  background:
+    linear-gradient(rgba(2, 6, 23, 0.72), rgba(2, 6, 23, 0.72)),
+    url("assets/signup-bg.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+:root[data-theme="dark"] .auth-card{
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid var(--borderStrong);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .auth-screen .form-control{
+  background: rgba(15, 23, 42, 0.92);
+  border-color: var(--borderStrong);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .auth-screen .form-control::placeholder{
+  color: var(--textSoft);
+}
+
+:root[data-theme="dark"] .auth-screen .form-label,
+:root[data-theme="dark"] .auth-screen .auth-card h2,
+:root[data-theme="dark"] .auth-screen .auth-card p{
+  color: var(--text);
+}
+
 
 /* Responsive */
 @media (max-width: 992px){
@@ -1375,7 +1482,7 @@ body:has(.shell--collapsed) .topbar__left .iconBtn{
     align-items: flex-start;
   }
 }
-}
+
 
 
 

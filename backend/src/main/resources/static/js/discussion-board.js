@@ -1,13 +1,15 @@
 const token = localStorage.getItem("token");
-if (!token) {
-  window.location.href = "/login";
-}
+const authErrorMessage = "Your session has expired or you are not logged in.";
 
 const discussionList = document.getElementById("discussionList");
 const filterChips = Array.from(document.querySelectorAll("[data-sort]"));
 let currentSort = "all";
 
 async function apiFetch(url, options = {}) {
+  if (!token) {
+    throw new Error(authErrorMessage);
+  }
+
   const headers = new Headers(options.headers || {});
   headers.set("Authorization", `Bearer ${token}`);
   if (options.body && !headers.has("Content-Type")) {
@@ -17,8 +19,7 @@ async function apiFetch(url, options = {}) {
   const response = await fetch(url, { ...options, headers });
   if (response.status === 401) {
     localStorage.removeItem("token");
-    window.location.href = "/login";
-    return null;
+    throw new Error(authErrorMessage);
   }
   if (!response.ok) {
     let message = "Request failed.";
@@ -135,9 +136,6 @@ function renderDiscussions(discussions) {
 
 async function loadDiscussions() {
   const response = await apiFetch(`/api/discussions?sort=${encodeURIComponent(currentSort)}`);
-  if (!response) {
-    return;
-  }
   const discussions = await response.json();
   renderDiscussions(discussions);
 }
@@ -149,9 +147,6 @@ async function loadComments(discussionId) {
   }
   listEl.innerHTML = "<p class=\"discussionCard__text\">Loading comments...</p>";
   const response = await apiFetch(`/api/discussions/${discussionId}/comments`);
-  if (!response) {
-    return;
-  }
   const comments = await response.json();
   if (!comments.length) {
     listEl.innerHTML = "<p class=\"discussionCard__text\">No comments yet.</p>";

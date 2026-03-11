@@ -1,8 +1,5 @@
 const token = localStorage.getItem("token");
-
-if (!token) {
-  window.location.href = "/login";
-}
+const authErrorMessage = "Your session has expired or you are not logged in.";
 
 const notesGrid = document.getElementById("notesGrid");
 const notesCount = document.getElementById("notesCount");
@@ -23,14 +20,17 @@ const noteAttachmentInfo = document.getElementById("noteAttachmentInfo");
 let notes = [];
 
 async function apiFetch(url, options = {}) {
+  if (!token) {
+    throw new Error(authErrorMessage);
+  }
+
   const headers = new Headers(options.headers || {});
   headers.set("Authorization", `Bearer ${token}`);
 
   const response = await fetch(url, { ...options, headers });
   if (response.status === 401) {
     localStorage.removeItem("token");
-    window.location.href = "/login";
-    return null;
+    throw new Error(authErrorMessage);
   }
 
   if (!response.ok) {
@@ -107,9 +107,6 @@ function renderNotes() {
 
 async function loadNotes() {
   const response = await apiFetch("/api/notes");
-  if (!response) {
-    return;
-  }
   notes = await response.json();
   renderNotes();
 }
@@ -144,9 +141,6 @@ function fillForm(note) {
 
 async function openForEdit(noteId) {
   const response = await apiFetch(`/api/notes/${noteId}`);
-  if (!response) {
-    return;
-  }
   const note = await response.json();
   noteModalTitle.textContent = "Edit Note";
   resetForm();

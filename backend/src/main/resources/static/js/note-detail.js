@@ -1,7 +1,5 @@
 const token = localStorage.getItem("token");
-if (!token) {
-  window.location.href = "/login";
-}
+const authErrorMessage = "Your session has expired or you are not logged in.";
 
 const pathMatch = window.location.pathname.match(/\/notes\/view\/(\d+)/);
 const noteId = pathMatch ? pathMatch[1] : null;
@@ -25,14 +23,17 @@ const noteAttachmentInfo = document.getElementById("noteAttachmentInfo");
 let currentNote = null;
 
 async function apiFetch(url, options = {}) {
+  if (!token) {
+    throw new Error(authErrorMessage);
+  }
+
   const headers = new Headers(options.headers || {});
   headers.set("Authorization", `Bearer ${token}`);
 
   const response = await fetch(url, { ...options, headers });
   if (response.status === 401) {
     localStorage.removeItem("token");
-    window.location.href = "/login";
-    return null;
+    throw new Error(authErrorMessage);
   }
 
   if (!response.ok) {
@@ -94,9 +95,6 @@ async function loadNote() {
   }
 
   const response = await apiFetch(`/api/notes/${noteId}`);
-  if (!response) {
-    return;
-  }
   currentNote = await response.json();
   render();
 }

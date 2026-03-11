@@ -69,6 +69,167 @@ body{
   color: var(--text);
 }
 
+.authPage{
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(29, 79, 174, 0.28), transparent 34%),
+    radial-gradient(circle at bottom right, rgba(155, 122, 79, 0.26), transparent 30%),
+    linear-gradient(135deg, rgba(255,255,255,0.72), rgba(237,233,227,0.92));
+  background-color: var(--bg);
+}
+
+:root[data-theme="dark"] .authPage{
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.22), transparent 34%),
+    radial-gradient(circle at bottom right, rgba(124, 94, 55, 0.18), transparent 32%),
+    linear-gradient(135deg, #020617, #111827 58%, #172554);
+}
+
+.authPage__layout{
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(320px, 1.1fr) minmax(360px, 520px);
+}
+
+.authPage__layout--reverse{
+  grid-template-columns: minmax(360px, 520px) minmax(320px, 1.1fr);
+}
+
+.authHero,
+.authCardWrap{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+}
+
+.authHero{
+  position: relative;
+}
+
+.authHero__panel{
+  width: min(100%, 620px);
+  padding: 56px;
+  border-radius: 36px;
+  color: var(--text);
+  background: rgba(255,255,255,.28);
+  border: 1px solid rgba(255,255,255,.3);
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.12);
+  backdrop-filter: blur(14px);
+}
+
+:root[data-theme="dark"] .authHero__panel{
+  background: rgba(15,23,42,.48);
+  border-color: rgba(148,163,184,.18);
+  box-shadow: 0 28px 80px rgba(2, 6, 23, 0.42);
+}
+
+.authHero__brand{
+  margin-bottom: 36px;
+}
+
+.authThemeToggle{
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid var(--borderSoft);
+  background: var(--surfaceStrong);
+}
+
+.authHero__eyebrow{
+  margin: 0 0 14px;
+  font-size: .82rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--brandBlue);
+}
+
+.authHero__title{
+  margin: 0 0 16px;
+  font-size: clamp(2.4rem, 4vw, 4.4rem);
+  line-height: 1.02;
+}
+
+.authHero__copy{
+  margin: 0;
+  max-width: 34rem;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.authCard{
+  width: min(100%, 440px);
+  padding: 36px 32px;
+  border: 1px solid var(--borderSoft);
+  border-radius: 28px;
+  background: rgba(255,255,255,.82);
+  color: var(--text);
+  box-shadow: 0 26px 80px rgba(15, 23, 42, 0.18);
+}
+
+:root[data-theme="dark"] .authCard{
+  background: rgba(15,23,42,.88);
+  box-shadow: 0 26px 80px rgba(2, 6, 23, 0.42);
+}
+
+.authCard__subtitle{
+  color: var(--muted);
+}
+
+.authMessage{
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-size: .95rem;
+}
+
+.authMessage--error{
+  color: #991b1b;
+  background: rgba(254, 226, 226, .92);
+  border: 1px solid rgba(248, 113, 113, .4);
+}
+
+:root[data-theme="dark"] .authMessage--error{
+  color: #fecaca;
+  background: rgba(127, 29, 29, .32);
+  border-color: rgba(248, 113, 113, .32);
+}
+
+.authCard .form-control{
+  min-height: 48px;
+  border-radius: 14px;
+  background: rgba(255,255,255,.72);
+  border-color: rgba(148, 163, 184, .32);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .authCard .form-control{
+  background: rgba(15,23,42,.9);
+  border-color: rgba(148,163,184,.24);
+  color: var(--text);
+}
+
+.authCard .btn-primary{
+  min-height: 48px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, #1d4fae, #2f66e3);
+}
+
+.authCard .btn-primary:hover{
+  background: linear-gradient(135deg, #19459a, #2559cc);
+}
+
+.authCard a{
+  color: var(--btnBlue);
+  font-weight: 600;
+}
+
 /* Topbar */
 .topbar{
   position: sticky;
@@ -218,6 +379,43 @@ body:has(.shell--collapsed) .topbar__left .iconBtn{
   color: var(--text);
   cursor: pointer;
   text-decoration: none;
+}
+
+@media (max-width: 960px){
+  .authPage__layout,
+  .authPage__layout--reverse{
+    grid-template-columns: 1fr;
+  }
+
+  .authHero{
+    padding-bottom: 0;
+  }
+
+  .authHero__panel{
+    padding: 40px 28px;
+  }
+
+  .authHero__title{
+    font-size: clamp(2rem, 10vw, 3.2rem);
+  }
+}
+
+@media (max-width: 576px){
+  .authHero,
+  .authCardWrap{
+    padding: 18px;
+  }
+
+  .authHero__panel,
+  .authCard{
+    padding: 28px 20px;
+    border-radius: 24px;
+  }
+
+  .authThemeToggle{
+    top: 16px;
+    right: 16px;
+  }
 }
 
 .profileBtn__icon{
