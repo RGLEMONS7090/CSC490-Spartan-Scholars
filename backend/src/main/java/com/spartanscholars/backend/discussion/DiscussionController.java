@@ -44,6 +44,14 @@ public class DiscussionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(discussionService.create(user, request));
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<DiscussionSummaryResponse> getDiscussion(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(discussionService.getDiscussion(user, id));
+    }
+
     @PostMapping("/{id}/likes")
     public ResponseEntity<LikeResponse> toggleLike(@AuthenticationPrincipal User user, @PathVariable Long id) {
         return ResponseEntity.ok(discussionService.toggleLike(user, id));

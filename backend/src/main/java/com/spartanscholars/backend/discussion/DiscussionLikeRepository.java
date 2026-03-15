@@ -6,12 +6,15 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import com.spartanscholars.backend.user.User;
 
 public interface DiscussionLikeRepository extends JpaRepository<DiscussionLike, Long> {
 
     Optional<DiscussionLike> findByDiscussionIdAndUserId(Long discussionId, Long userId);
 
     long countByDiscussionId(Long discussionId);
+
+    boolean existsByUserAndDiscussion(User user, Discussion discussion);
 
     @Query("""
             select l.discussion.id as discussionId, count(l) as total

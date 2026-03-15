@@ -238,4 +238,25 @@ public class DiscussionService {
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
     }
+
+    public DiscussionSummaryResponse getDiscussion(User user, Long id) {
+        Discussion d = findDiscussion(id);
+    
+        long likeCount = discussionLikeRepository.countByDiscussionId(id);
+        long commentCount = discussionCommentRepository.countByDiscussionId(id);
+        boolean likedByCurrentUser =
+                discussionLikeRepository.existsByUserAndDiscussion(user, d);
+    
+        return new DiscussionSummaryResponse(
+                d.getId(),
+                d.getTitle(),
+                d.getDescription(),
+                d.getOwner().getName(),
+                likeCount,
+                commentCount,
+                likedByCurrentUser,
+                d.getCreatedAt(),
+                d.getUpdatedAt()
+        );
+    }
 }
