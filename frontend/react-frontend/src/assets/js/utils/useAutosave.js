@@ -11,5 +11,5 @@ export default function useAutosave(data, onSave, delay = 800) {
     }, delay);
 
     return () => clearTimeout(timeoutRef.current);
-  }, [data, delay]);
+  }, [data, onSave, delay]);
 }

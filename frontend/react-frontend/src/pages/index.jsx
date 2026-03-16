@@ -33,7 +33,7 @@ export default function Index() {
                     <li><span className="dot dot--blue"></span>Text Editor</li>
                     <li><span className="dot dot--blue"></span>Categories &amp; Tags</li>
                   </ul>
-                  <Link className="primaryBtn primaryBtn--link" to="/notes-summaries">
+                  <Link className="primaryBtn primaryBtn--link" to="/notes">
                     Get Started <span className="arrow">→</span>
                   </Link>
                 </article>

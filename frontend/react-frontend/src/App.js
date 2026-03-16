@@ -14,10 +14,16 @@ import DiscussionBoard from "./pages/discussion-board";
 import Analytics from "./pages/analytics";
 import ExploreTopics from "./pages/explore-topics";
 import StudyGroups from "./pages/study-groups";
+import StudyGroupView from "./pages/study-groups/group-view";
 import Notes from "./pages/notes";
 import NoteDetail from "./pages/notes_pages/note-detail";
 import AiAssistant from "./pages/ai-assistant";
 import TakeQuizzes from "./pages/take-quizzes";
+import QuizCreate from "./pages/quizzes/quiz-create";
+import QuizTestEditor from "./pages/quizzes/quiz-test-editor";
+import QuizFlashcardEditor from "./pages/quizzes/quiz-flashcard-editor";
+import QuizTestPlayer from "./pages/quizzes/quiz-test-player";
+import QuizFlashcardPlayer from "./pages/quizzes/quiz-flashcard-player";
 
 import DiscussionNew from "./pages/discussion/discussion-new";
 import DiscussionView from "./pages/discussion/discussion-view";
@@ -36,10 +42,16 @@ export default function App() {
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/explore-topics" element={<ExploreTopics />} />
           <Route path="/study-groups" element={<StudyGroups />} />
+          <Route path="/study-groups/:id" element={<StudyGroupView />} />
           <Route path="/notes" element={<Notes />} />
           <Route path="/note/:id" element={<NoteDetail />} />
           <Route path="/ai-assistant" element={<AiAssistant />} />
           <Route path="/take-quizzes" element={<TakeQuizzes />} />
+          <Route path="/take-quizzes/create" element={<QuizCreate />} />
+          <Route path="/take-quizzes/create/test" element={<QuizTestEditor />} />
+          <Route path="/take-quizzes/create/flashcards" element={<QuizFlashcardEditor />} />
+          <Route path="/take-quizzes/:id" element={<QuizTestPlayer />} />
+          <Route path="/take-quizzes/:id/flashcards" element={<QuizFlashcardPlayer />} />
           <Route path="/discussion-board/new" element={<DiscussionNew />} />
           <Route path="/discussion-board/:id" element={<DiscussionView />} />
           <Route path="/notes/new" element={<NoteEditor />} />

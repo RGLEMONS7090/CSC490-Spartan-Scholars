@@ -1,6 +1,7 @@
 package com.spartanscholars.backend.note;
 
 import com.spartanscholars.backend.note.dto.NoteResponse;
+import com.spartanscholars.backend.note.dto.NoteSummaryProjection;
 import com.spartanscholars.backend.note.dto.NoteSummaryResponse;
 import com.spartanscholars.backend.user.User;
 import java.io.IOException;
@@ -28,24 +29,81 @@ public class NoteService {
     @Transactional(readOnly = true)
     public List<NoteSummaryResponse> list(User user) {
         User authenticated = requireUser(user);
-        return noteRepository.findByOwnerIdOrderByUpdatedAtDesc(authenticated.getId())
+        return noteRepository.findSummariesByOwnerIdOrderByUpdatedAtDesc(authenticated.getId())
                 .stream()
-                .map(note -> {
-                    String preview = note.getContent() == null ? "" : note.getContent().trim();
-                    if (preview.length() > PREVIEW_LENGTH) {
-                        preview = preview.substring(0, PREVIEW_LENGTH) + "...";
-                    }
-                    return new NoteSummaryResponse(
-                            note.getId(),
-                            note.getTitle(),
-                            note.getCategory(),
-                            preview,
-                            note.getFileName(),
-                            note.getFileName() != null && !note.getFileName().isBlank(),
-                            note.getUpdatedAt()
-                    );
-                })
+                .map(this::toSummaryResponse)
                 .toList();
+    }
+
+    private NoteSummaryResponse toSummaryResponse(NoteSummaryProjection note) {
+        String preview = buildPreview(note.getContent());
+        return new NoteSummaryResponse(
+                note.getId(),
+                note.getTitle(),
+                note.getCategory(),
+                preview,
+                note.getFileName(),
+                note.getFileName() != null && !note.getFileName().isBlank(),
+                note.getUpdatedAt()
+        );
+    }
+
+    private String buildPreview(String rawPreview) {
+        if (rawPreview == null) {
+            return "";
+        }
+
+        String trimmed = rawPreview.trim();
+        if (trimmed.isEmpty()) {
+            return "";
+        }
+
+        for (String line : trimmed.split("\\R+")) {
+            String normalizedLine = line.trim().replaceAll("\\s+", " ");
+            String cleanedLine = cleanPreviewLine(normalizedLine);
+            if (isMeaningfulPreviewLine(cleanedLine)) {
+                return truncatePreview(cleanedLine);
+            }
+        }
+
+        return truncatePreview(cleanPreviewLine(trimmed.replaceAll("\\s+", " ")));
+    }
+
+    private boolean isMeaningfulPreviewLine(String line) {
+        if (line.isEmpty()) {
+            return false;
+        }
+
+        long letterCount = line.chars().filter(Character::isLetter).count();
+        return letterCount >= 3;
+    }
+
+    private String cleanPreviewLine(String line) {
+        if (line == null || line.isBlank()) {
+            return "";
+        }
+
+        // Skip leading page numbers, bullets, punctuation, and other extraction noise
+        int firstLetterIndex = -1;
+        for (int i = 0; i < line.length(); i++) {
+            if (Character.isLetter(line.charAt(i))) {
+                firstLetterIndex = i;
+                break;
+            }
+        }
+
+        if (firstLetterIndex <= 0) {
+            return line.trim();
+        }
+
+        return line.substring(firstLetterIndex).trim();
+    }
+
+    private String truncatePreview(String preview) {
+        if (preview.length() <= PREVIEW_LENGTH) {
+            return preview;
+        }
+        return preview.substring(0, PREVIEW_LENGTH) + "...";
     }
 
     @Transactional(readOnly = true)

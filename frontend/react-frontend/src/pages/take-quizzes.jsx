@@ -1,140 +1,160 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import {Helmet} from "react-helmet-async";
+import { Helmet } from "react-helmet-async";
+import { deleteQuiz, fetchQuizOverview } from "../assets/js/api/quizApi";
 
 export default function TakeQuizzes() {
+  const [overview, setOverview] = useState({
+    totalAvailable: 0,
+    completedCount: 0,
+    averageScore: null,
+    quizzes: [],
+  });
+  const [error, setError] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
+
+  useEffect(() => {
+    async function loadOverview() {
+      try {
+        const data = await fetchQuizOverview();
+        setOverview(data);
+      } catch (err) {
+        setError(err.message);
+      }
+    }
+
+    loadOverview();
+  }, []);
+
+  async function handleDeleteQuiz(quizId) {
+    const confirmed = window.confirm("Are you sure you want to delete this quiz?");
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingId(quizId);
+    setError("");
+    try {
+      await deleteQuiz(quizId);
+      setOverview((prev) => {
+        const quizzes = prev.quizzes.filter((quiz) => quiz.id !== quizId);
+        const completedQuizzes = quizzes.filter((quiz) => quiz.completed);
+        const scores = quizzes
+          .map((quiz) => quiz.latestScore)
+          .filter((score) => score != null);
+
+        return {
+          totalAvailable: quizzes.length,
+          completedCount: completedQuizzes.length,
+          averageScore: scores.length
+            ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
+            : null,
+          quizzes,
+        };
+      });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <>
       <Helmet>
-        <title> Quizzes </title>
+        <title>Quizzes</title>
       </Helmet>
 
-        <main className="main main--quizzes">
-          <section className="quizzesHeader">
-            <div className="quizzesHeader__title">
-              <div className="quizzesHeader__icon">Q</div>
-              <div>
-                <h1>Take Quizzes</h1>
-                <p>Test your knowledge and track your progress</p>
-              </div>
+      <main className="main main--quizzes">
+        <section className="quizzesHeader">
+          <div className="quizzesHeader__title">
+            <div className="quizzesHeader__icon">Q</div>
+            <div>
+              <h1>Take Quizzes</h1>
+              <p>Create test quizzes or flashcard quizzes, then take them here.</p>
             </div>
-          </section>
+          </div>
 
-          <section className="quizStats">
-            <article className="quizStatCard">
-              <h2>Total Quizzes</h2>
-              <div className="quizStatCard__value">6</div>
-              <p>Available to take</p>
-            </article>
+          <Link className="quizCreateBtn" to="/take-quizzes/create">
+            Create Quiz
+          </Link>
+        </section>
 
-            <article className="quizStatCard">
-              <h2>Completed</h2>
-              <div className="quizStatCard__value">3</div>
-              <div className="quizStatCard__bar">
-                <span />
-              </div>
-            </article>
+        <section className="quizStats">
+          <article className="quizStatCard">
+            <h2>Total Quizzes</h2>
+            <div className="quizStatCard__value">{overview.totalAvailable}</div>
+            <p>Available to take</p>
+          </article>
 
-            <article className="quizStatCard">
-              <h2>Average Score</h2>
-              <div className="quizStatCard__value">85%</div>
-              <p>Keep up the good work!</p>
-            </article>
-          </section>
+          <article className="quizStatCard">
+            <h2>Completed</h2>
+            <div className="quizStatCard__value">{overview.completedCount}</div>
+            <p>Quizzes or decks you've finished</p>
+          </article>
 
-          <section className="quizGrid">
-            {/* Quiz 1 */}
-            <article className="quizCard">
+          <article className="quizStatCard">
+            <h2>Average Score</h2>
+            <div className="quizStatCard__value">
+              {overview.averageScore == null ? "--" : `${overview.averageScore}%`}
+            </div>
+            <p>Across graded test attempts</p>
+          </article>
+        </section>
+
+        <section className="quizGrid">
+          {overview.quizzes.map((quiz) => (
+            <article key={quiz.id} className="quizCard">
               <div className="quizCard__top">
-                <span className="quizCard__tag">Computer Science</span>
-                <span className="quizCard__level quizCard__level--medium">
-                  Medium
+                <span className="quizCard__tag">{quiz.type === "TEST" ? "Test" : "Flashcard"}</span>
+                <span className={`quizCard__level ${quiz.type === "TEST" ? "quizCard__level--medium" : "quizCard__level--easy"}`}>
+                  {quiz.type === "TEST" ? "Test" : "Flashcard"}
                 </span>
               </div>
 
-              <h2>Data Structures & Algorithms</h2>
+              <h2>{quiz.title}</h2>
 
               <p className="quizCard__meta">
-                20 questions <span>•</span> 30 min
+                {quiz.itemCount} {quiz.type === "TEST" ? "questions" : "cards"}
               </p>
 
-              <button
-                type="button"
-                className="quizCard__button quizCard__button--primary"
-              >
-                Start Quiz
-              </button>
+              {quiz.latestScore != null && (
+                <div className="quizCard__scoreRow">
+                  <span>Your Score:</span>
+                  <strong>{quiz.latestScore}%</strong>
+                </div>
+              )}
+
+              <div className="quizCard__actions">
+                <Link
+                  className={`quizActionBtn ${quiz.completed ? "quizActionBtn--secondary" : "quizActionBtn--primary"}`}
+                  to={quiz.type === "TEST" ? `/take-quizzes/${quiz.id}` : `/take-quizzes/${quiz.id}/flashcards`}
+                >
+                  {quiz.completed ? "Retake" : "Start"} {quiz.type === "TEST" ? "Quiz" : "Flashcards"}
+                </Link>
+
+                <button
+                  type="button"
+                  className="quizActionBtn quizActionBtn--danger"
+                  onClick={() => handleDeleteQuiz(quiz.id)}
+                  disabled={deletingId === quiz.id}
+                >
+                  {deletingId === quiz.id ? "Deleting..." : "Delete"}
+                </button>
+              </div>
             </article>
+          ))}
 
-            {/* Quiz 2 */}
-            <article className="quizCard">
-              <div className="quizCard__top">
-                <span className="quizCard__tag">Anatomy</span>
-                <span className="quizCard__level quizCard__level--hard">Hard</span>
-              </div>
-
-              <h2>Human Anatomy Quiz</h2>
-
-              <p className="quizCard__meta">
-                15 questions <span>•</span> 20 min
-              </p>
-
-              <div className="quizCard__scoreRow">
-                <span>Your Score:</span>
-                <strong>85%</strong>
-              </div>
-
-              <button type="button" className="quizCard__button">
-                Retake Quiz
-              </button>
+          {overview.quizzes.length === 0 && (
+            <article className="quizBuilderCard">
+              <h2>No quizzes yet</h2>
+              <p>Create your first test quiz or flashcard set to see it here.</p>
             </article>
+          )}
+        </section>
 
-            {/* Quiz 3 */}
-            <article className="quizCard">
-              <div className="quizCard__top">
-                <span className="quizCard__tag">Chemistry</span>
-                <span className="quizCard__level quizCard__level--easy">Easy</span>
-              </div>
-
-              <h2>Chemical Reactions</h2>
-
-              <p className="quizCard__meta">
-                25 questions <span>•</span> 35 min
-              </p>
-
-              <button
-                type="button"
-                className="quizCard__button quizCard__button--primary"
-              >
-                Start Quiz
-              </button>
-            </article>
-
-            {/* Quiz 4 */}
-            <article className="quizCard">
-              <div className="quizCard__top">
-                <span className="quizCard__tag">Mathematics</span>
-                <span className="quizCard__level quizCard__level--medium">
-                  Medium
-                </span>
-              </div>
-
-              <h2>Calculus Fundamentals</h2>
-
-              <p className="quizCard__meta">
-                18 questions <span>•</span> 25 min
-              </p>
-
-              <div className="quizCard__scoreRow">
-                <span>Your Score:</span>
-                <strong>92%</strong>
-              </div>
-
-              <button type="button" className="quizCard__button">
-                Retake Quiz
-              </button>
-            </article>
-          </section>
-        </main>
+        {error && <p className="quizError">{error}</p>}
+      </main>
     </>
   );
 }

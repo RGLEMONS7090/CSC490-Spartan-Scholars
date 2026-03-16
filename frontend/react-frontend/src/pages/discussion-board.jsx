@@ -1,9 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import {useState, useEffect} from "react";
-import useTheme from "../assets/js/useTheme";
-import {logout} from "../assets/js/utils/logout";
 import {Helmet} from "react-helmet-async";
-import {apiFetch, fetchDiscussions} from "../assets/js/api/discussionAPi";
+import {fetchDiscussions} from "../assets/js/api/discussionAPi";
 
 export default function DiscussionBoard() {
 
@@ -12,7 +10,6 @@ export default function DiscussionBoard() {
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState("all");
   const [error, setError] = useState("");
-  const [initialLoad, setInitialLoad] = useState(true);
 
   {/* To Navigate */}
   const navigate = useNavigate();
@@ -24,71 +21,38 @@ export default function DiscussionBoard() {
     recent: null,
   });
 
-  
-  async function loadDiscussions(sortType = "all", isInitial = false) {
+  async function loadDiscussions(sortType = "all") {
     try {
       setError("");
   
       // If cached , show
       if (cache[sortType]) {
         setDiscussions(cache[sortType]);
-        if (!isInitial) setLoading(false);
+        setLoading(false);
+        return;
       } else {
-        if (!isInitial) setLoading(true);
+        setLoading(true);
       }
 
       const data = await fetchDiscussions(sortType);
   
       // Update cache
       setCache(prev => ({ ...prev, [sortType]: data }));
-  
-      // Update the UI on first load
-      if (isInitial && sortType === "all") {
-        setDiscussions(data);
-        setLoading(false);
-        return;
-      }
-  
-      if (sort === sortType) {
-        setDiscussions(data);
-      }
+      setDiscussions(data);
   
     } catch (err) {
       setError(err.message);
     } finally {
-      if (!isInitial) setLoading(false);
+      setLoading(false);
     }
   }
 
   useEffect(() => {
-    async function preload() {
-      await loadDiscussions("all", true);
-      loadDiscussions("trending", true);
-      loadDiscussions("recent", true);
-  
-      setInitialLoad(false);
-    }
-  
-    preload();
+    loadDiscussions("all");
   }, []);
 
-  // Preload discussion + comments before navigating
-  async function handleOpenDiscussion(id) {
-    try {
-      const [discussionRes, commentsRes] = await Promise.all([
-        apiFetch(`/api/discussions/${id}`),
-        apiFetch(`/api/discussions/${id}/comments`),
-      ]);
-
-      const discussion = await discussionRes.json();
-      const comments = await commentsRes.json();
-
-      navigate(`/discussion-board/${id}`, {
-        state: { preloadedDiscussion: discussion, preloadedComments: comments },
-      });
-    } catch (err) {
-      console.error(err);
-    }
+  function handleOpenDiscussion(id) {
+    navigate(`/discussion-board/${id}`);
   }
 
   return (

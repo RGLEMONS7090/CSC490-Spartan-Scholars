@@ -14,7 +14,5 @@ public interface NoteSummaryProjection {
 
     String getFileName();
 
-    boolean getHasAttachment();
-
     Instant getUpdatedAt();
 }
