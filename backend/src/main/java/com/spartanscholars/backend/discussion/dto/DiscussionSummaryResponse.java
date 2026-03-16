@@ -7,6 +7,7 @@ public record DiscussionSummaryResponse(
         String title,
         String description,
         String authorName,
+        boolean ownedByCurrentUser,
         long likeCount,
         long commentCount,
         boolean likedByCurrentUser,

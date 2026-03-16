@@ -37,9 +37,9 @@ public class DiscussionService {
     }
 
     @Transactional(readOnly = true)
-    public List<DiscussionSummaryResponse> list(User user, String sort) {
+    public List<DiscussionSummaryResponse> list(User user, String sort, String query) {
         User authenticated = requireUser(user);
-        List<Discussion> discussions = loadDiscussions(sort);
+        List<Discussion> discussions = loadDiscussions(sort, query);
         if (discussions.isEmpty()) {
             return List.of();
         }
@@ -57,6 +57,7 @@ public class DiscussionService {
                         discussion.getTitle(),
                         discussion.getDescription(),
                         discussion.getOwner().getName(),
+                        discussion.getOwner().getId().equals(authenticated.getId()),
                         likesByDiscussion.getOrDefault(discussion.getId(), 0L),
                         commentsByDiscussion.getOrDefault(discussion.getId(), 0L),
                         likedByCurrentUser.contains(discussion.getId()),
@@ -95,12 +96,26 @@ public class DiscussionService {
                 saved.getTitle(),
                 saved.getDescription(),
                 authenticated.getName(),
+                true,
                 0,
                 0,
                 false,
                 saved.getCreatedAt(),
                 saved.getUpdatedAt()
         );
+    }
+
+    @Transactional
+    public void deleteDiscussion(User user, Long discussionId) {
+        User authenticated = requireUser(user);
+        Discussion discussion = findDiscussion(discussionId);
+        if (!discussion.getOwner().getId().equals(authenticated.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the creator can delete this discussion.");
+        }
+
+        discussionCommentRepository.deleteByDiscussionId(discussionId);
+        discussionLikeRepository.deleteByDiscussionId(discussionId);
+        discussionRepository.delete(discussion);
     }
 
     @Transactional
@@ -203,8 +218,21 @@ public class DiscussionService {
         );
     }
 
-    private List<Discussion> loadDiscussions(String sort) {
+    private List<Discussion> loadDiscussions(String sort, String query) {
         String normalized = sort == null ? "all" : sort.trim().toLowerCase();
+        String search = sanitize(query);
+        if (search != null) {
+            if ("recent".equals(normalized)) {
+                return discussionRepository.findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCaseOrderByCreatedAtDesc(
+                        search,
+                        search
+                );
+            }
+            return discussionRepository.findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCaseOrderByUpdatedAtDesc(
+                    search,
+                    search
+            );
+        }
         if ("recent".equals(normalized)) {
             return discussionRepository.findAllByOrderByCreatedAtDesc();
         }
@@ -240,18 +268,20 @@ public class DiscussionService {
     }
 
     public DiscussionSummaryResponse getDiscussion(User user, Long id) {
+        User authenticated = requireUser(user);
         Discussion d = findDiscussion(id);
     
         long likeCount = discussionLikeRepository.countByDiscussionId(id);
         long commentCount = discussionCommentRepository.countByDiscussionId(id);
         boolean likedByCurrentUser =
-                discussionLikeRepository.existsByUserAndDiscussion(user, d);
+                discussionLikeRepository.existsByUserAndDiscussion(authenticated, d);
     
         return new DiscussionSummaryResponse(
                 d.getId(),
                 d.getTitle(),
                 d.getDescription(),
                 d.getOwner().getName(),
+                d.getOwner().getId().equals(authenticated.getId()),
                 likeCount,
                 commentCount,
                 likedByCurrentUser,

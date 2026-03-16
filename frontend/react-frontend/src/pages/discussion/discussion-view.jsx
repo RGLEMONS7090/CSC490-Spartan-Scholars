@@ -5,17 +5,19 @@ import {
   fetchComments,
   postComment,
   toggleLike,
+  deleteDiscussion,
   initials,
   relativeTime,
 } from "../../assets/js/api/discussionAPi";
 import useTheme from "../../assets/js/useTheme";
 import {logout} from "../../assets/js/utils/logout";
 import {Helmet} from "react-helmet-async";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { postReply } from "../../assets/js/api/discussionAPi";
 
 export default function DiscussionView() {
   const location = useLocation();
+  const navigate = useNavigate();
   const preloadedDiscussion = location.state?.preloadedDiscussion ?? null;
   const preloadedComments = location.state?.preloadedComments ?? null;
 
@@ -80,6 +82,20 @@ export default function DiscussionView() {
         ...prev,
         commentCount: prev.commentCount + 1,
       }));
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleDeleteDiscussion = async () => {
+    const confirmed = window.confirm("Are you sure you want to delete this discussion?");
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await deleteDiscussion(id);
+      navigate("/discussion-board");
     } catch (err) {
       alert(err.message);
     }
@@ -241,12 +257,24 @@ export default function DiscussionView() {
           </p>
         </div>
 
-        <Link
-          to="/discussion-board"
-          className="discussionTop__button discussionTop__button--link"
-        >
-          Back to Board
-        </Link>
+        <div className="discussionTop__actions">
+          {discussion.ownedByCurrentUser && (
+            <button
+              type="button"
+              className="discussionTop__button discussionTop__button--danger"
+              onClick={handleDeleteDiscussion}
+            >
+              Delete Post
+            </button>
+          )}
+
+          <Link
+            to="/discussion-board"
+            className="discussionTop__button discussionTop__button--link"
+          >
+            Back to Board
+          </Link>
+        </div>
       </section>
 
       <article className="discussionCard">

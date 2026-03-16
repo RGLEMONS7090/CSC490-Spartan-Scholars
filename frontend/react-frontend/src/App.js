@@ -18,6 +18,7 @@ import StudyGroupView from "./pages/study-groups/group-view";
 import Notes from "./pages/notes";
 import NoteDetail from "./pages/notes_pages/note-detail";
 import AiAssistant from "./pages/ai-assistant";
+import Profile from "./pages/profile";
 import TakeQuizzes from "./pages/take-quizzes";
 import QuizCreate from "./pages/quizzes/quiz-create";
 import QuizAiGenerator from "./pages/quizzes/quiz-ai-generator";
@@ -47,6 +48,7 @@ export default function App() {
           <Route path="/notes" element={<Notes />} />
           <Route path="/note/:id" element={<NoteDetail />} />
           <Route path="/ai-assistant" element={<AiAssistant />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/take-quizzes" element={<TakeQuizzes />} />
           <Route path="/take-quizzes/create" element={<QuizCreate />} />
           <Route path="/take-quizzes/create/ai" element={<QuizAiGenerator />} />

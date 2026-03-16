@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,9 +32,10 @@ public class DiscussionController {
     @GetMapping
     public ResponseEntity<List<DiscussionSummaryResponse>> list(
             @AuthenticationPrincipal User user,
-            @RequestParam(defaultValue = "all") String sort
+            @RequestParam(defaultValue = "all") String sort,
+            @RequestParam(required = false) String query
     ) {
-        return ResponseEntity.ok(discussionService.list(user, sort));
+        return ResponseEntity.ok(discussionService.list(user, sort, query));
     }
 
     @PostMapping
@@ -50,6 +52,15 @@ public class DiscussionController {
             @PathVariable Long id
     ) {
         return ResponseEntity.ok(discussionService.getDiscussion(user, id));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteDiscussion(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long id
+    ) {
+        discussionService.deleteDiscussion(user, id);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{id}/likes")

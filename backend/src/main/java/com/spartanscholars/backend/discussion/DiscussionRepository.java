@@ -8,4 +8,14 @@ public interface DiscussionRepository extends JpaRepository<Discussion, Long> {
     List<Discussion> findAllByOrderByUpdatedAtDesc();
 
     List<Discussion> findAllByOrderByCreatedAtDesc();
+
+    List<Discussion> findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCaseOrderByUpdatedAtDesc(
+            String titleQuery,
+            String descriptionQuery
+    );
+
+    List<Discussion> findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCaseOrderByCreatedAtDesc(
+            String titleQuery,
+            String descriptionQuery
+    );
 }

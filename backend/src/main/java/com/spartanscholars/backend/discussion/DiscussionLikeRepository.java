@@ -30,4 +30,6 @@ public interface DiscussionLikeRepository extends JpaRepository<DiscussionLike, 
             where l.user.id = :userId and l.discussion.id in :ids
             """)
     List<Long> findLikedDiscussionIds(@Param("userId") Long userId, @Param("ids") Collection<Long> ids);
+
+    void deleteByDiscussionId(Long discussionId);
 }

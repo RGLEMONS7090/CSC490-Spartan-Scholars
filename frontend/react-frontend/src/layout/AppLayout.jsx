@@ -89,11 +89,10 @@ export default function AppLayout() {
                 Logout
           </button>
 
-          <button className="profileBtn" type="button">
-            {/* Add profile images for users */}
+          <Link className="profileBtn" to="/profile">
             <span className="profileBtn__icon">P</span>
             <span className="profileBtn__text">Profile</span>
-          </button>
+          </Link>
         </div>
       </header>
 

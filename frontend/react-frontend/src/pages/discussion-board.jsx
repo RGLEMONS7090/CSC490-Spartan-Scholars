@@ -9,6 +9,7 @@ export default function DiscussionBoard() {
   const[discussions, setDiscussions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState("all");
+  const [query, setQuery] = useState("");
   const [error, setError] = useState("");
 
   {/* To Navigate */}
@@ -21,12 +22,13 @@ export default function DiscussionBoard() {
     recent: null,
   });
 
-  async function loadDiscussions(sortType = "all") {
+  async function loadDiscussions(sortType = "all", searchQuery = "") {
     try {
       setError("");
+      const normalizedQuery = searchQuery.trim();
   
       // If cached , show
-      if (cache[sortType]) {
+      if (!normalizedQuery && cache[sortType]) {
         setDiscussions(cache[sortType]);
         setLoading(false);
         return;
@@ -34,10 +36,12 @@ export default function DiscussionBoard() {
         setLoading(true);
       }
 
-      const data = await fetchDiscussions(sortType);
+      const data = await fetchDiscussions(sortType, normalizedQuery);
   
       // Update cache
-      setCache(prev => ({ ...prev, [sortType]: data }));
+      if (!normalizedQuery) {
+        setCache(prev => ({ ...prev, [sortType]: data }));
+      }
       setDiscussions(data);
   
     } catch (err) {
@@ -50,6 +54,14 @@ export default function DiscussionBoard() {
   useEffect(() => {
     loadDiscussions("all");
   }, []);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      loadDiscussions(sort, query);
+    }, 250);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [sort, query]);
 
   function handleOpenDiscussion(id) {
     navigate(`/discussion-board/${id}`);
@@ -92,7 +104,6 @@ export default function DiscussionBoard() {
               }`}
               onClick={() => {
                 setSort(type);
-                loadDiscussions(type);
               }}
             >
               {type === "all"
@@ -100,6 +111,17 @@ export default function DiscussionBoard() {
                 : type.charAt(0).toUpperCase() + type.slice(1)}
             </button>
           ))}
+        </section>
+
+        <section className="discussionSearch">
+          <label className="discussionSearch__field">
+            <span>Search discussions</span>
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search by title or description"
+            />
+          </label>
         </section>
 
           {/* Discussion List */}
@@ -120,9 +142,11 @@ export default function DiscussionBoard() {
 
           {!loading && discussions.length === 0 && (
             <article className="discussionCard">
-              <h2>No discussions yet</h2>
+              <h2>{query.trim() ? "No discussions found" : "No discussions yet"}</h2>
               <p className="discussionCard__text">
-                Start the discussion with the + New Discussion button.
+                {query.trim()
+                  ? "Try another search or clear the search field."
+                  : "Start the discussion with the + New Discussion button."}
               </p>
             </article>
           )}

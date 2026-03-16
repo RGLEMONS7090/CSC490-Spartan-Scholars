@@ -10,24 +10,9 @@ function blankCard() {
 export default function QuizFlashcardEditor() {
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
-  const [cardCount, setCardCount] = useState(3);
   const [cards, setCards] = useState([blankCard(), blankCard(), blankCard()]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-
-  function syncCardCount(nextCount) {
-    const normalized = Math.max(1, nextCount);
-    setCardCount(normalized);
-    setCards((prev) => {
-      if (prev.length === normalized) {
-        return prev;
-      }
-      if (prev.length < normalized) {
-        return [...prev, ...Array.from({ length: normalized - prev.length }, blankCard)];
-      }
-      return prev.slice(0, normalized);
-    });
-  }
 
   async function handleSave() {
     setSaving(true);
@@ -68,26 +53,25 @@ export default function QuizFlashcardEditor() {
         </section>
 
         <section className="quizEditorPanel">
-          <div className="quizOptionGrid">
-            <label className="quizField">
-              <span>Deck title</span>
-              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Networking Terms" />
-            </label>
-
-            <label className="quizField">
-              <span>Number of cards</span>
-              <input
-                type="number"
-                min="1"
-                value={cardCount}
-                onChange={(e) => syncCardCount(Number(e.target.value) || 1)}
-              />
-            </label>
-          </div>
+          <label className="quizField">
+            <span>Deck title</span>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Networking Terms" />
+          </label>
 
           {cards.map((card, index) => (
             <article key={index} className="quizEditorQuestion">
-              <h2>Card {index + 1}</h2>
+              <div className="quizEditorQuestion__top">
+                <h2>Card {index + 1}</h2>
+                {cards.length > 1 && (
+                  <button
+                    type="button"
+                    className="quizActionBtn quizActionBtn--danger"
+                    onClick={() => setCards((prev) => prev.filter((_, i) => i !== index))}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
               <div className="quizOptionGrid">
                 <label className="quizField">
                   <span>Front</span>
@@ -113,6 +97,14 @@ export default function QuizFlashcardEditor() {
               </div>
             </article>
           ))}
+
+          <button
+            type="button"
+            className="quizActionBtn quizActionBtn--secondary"
+            onClick={() => setCards((prev) => [...prev, blankCard()])}
+          >
+            + Add Card
+          </button>
 
           {error && <p className="quizError">{error}</p>}
         </section>

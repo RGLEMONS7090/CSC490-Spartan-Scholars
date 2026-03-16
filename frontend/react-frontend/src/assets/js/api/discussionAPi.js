@@ -61,8 +61,13 @@ export function relativeTime(iso) {
   return `${days}d ago`;
 }
 
-export async function fetchDiscussions(sort) {
-  const response = await apiFetch(`/api/discussions?sort=${encodeURIComponent(sort)}`);
+export async function fetchDiscussions(sort, query = "") {
+  const params = new URLSearchParams();
+  params.set("sort", sort);
+  if (query.trim()) {
+    params.set("query", query.trim());
+  }
+  const response = await apiFetch(`/api/discussions?${params.toString()}`);
   return response.json();
 }
 
@@ -71,6 +76,12 @@ export async function toggleLike(discussionId) {
     method: "POST",
   });
   return response.json();
+}
+
+export async function deleteDiscussion(discussionId) {
+  await apiFetch(`/api/discussions/${discussionId}`, {
+    method: "DELETE",
+  });
 }
 
 export async function fetchComments(discussionId) {

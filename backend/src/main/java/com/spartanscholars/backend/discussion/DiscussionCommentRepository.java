@@ -19,4 +19,6 @@ public interface DiscussionCommentRepository extends JpaRepository<DiscussionCom
     List<CountProjection> countByDiscussionIds(@Param("ids") Collection<Long> ids);
 
     long countByDiscussionId(Long discussionId);
+
+    void deleteByDiscussionId(Long discussionId);
 }

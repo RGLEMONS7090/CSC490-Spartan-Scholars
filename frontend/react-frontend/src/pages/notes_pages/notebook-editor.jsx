@@ -21,12 +21,21 @@ export default function NoteEditor() {
 
   const loadedRef = useRef(false);
   const saveInFlightRef = useRef(false);
-  const queuedSaveRef = useRef(null);
+  const queuedSaveRef = useRef(false);
   const lastSavedSnapshotRef = useRef("");
+  const editorStateRef = useRef(null);
 
   useEffect(() => {
     setCurrentNoteId(id ?? null);
   }, [id]);
+
+  editorStateRef.current = {
+    note,
+    noteId: currentNoteId,
+    attachment: currentAttachment,
+    removeAttachment,
+    selectedFile,
+  };
 
   function buildSnapshot(noteValue, noteIdValue, attachmentValue, removeAttachmentValue, selectedFileValue) {
     return JSON.stringify({
@@ -39,6 +48,14 @@ export default function NoteEditor() {
       selectedFile: selectedFileValue?.name || "",
     });
   }
+
+  const autosaveSnapshot = buildSnapshot(
+    note,
+    currentNoteId,
+    currentAttachment,
+    removeAttachment,
+    selectedFile
+  );
 
   useEffect(() => {
     if (!id) {
@@ -71,9 +88,17 @@ export default function NoteEditor() {
     loadNote();
   }, [id]);
 
-  async function saveNote(latestNote) {
+  async function saveNote(latestState = editorStateRef.current) {
+    const {
+      note: latestNote,
+      noteId: latestNoteId,
+      attachment: latestAttachment,
+      removeAttachment: latestRemoveAttachment,
+      selectedFile: latestSelectedFile,
+    } = latestState;
+
     if (saveInFlightRef.current) {
-      queuedSaveRef.current = latestNote;
+      queuedSaveRef.current = true;
       return;
     }
 
@@ -83,10 +108,10 @@ export default function NoteEditor() {
 
     const snapshot = buildSnapshot(
       latestNote,
-      currentNoteId,
-      currentAttachment,
-      removeAttachment,
-      selectedFile
+      latestNoteId,
+      latestAttachment,
+      latestRemoveAttachment,
+      latestSelectedFile
     );
     if (snapshot === lastSavedSnapshotRef.current) {
       setSaved(true);
@@ -100,13 +125,13 @@ export default function NoteEditor() {
     formData.append("title", latestNote.title || "");
     formData.append("category", latestNote.category || "");
     formData.append("content", latestNote.content || "");
-    formData.append("removeAttachment", removeAttachment ? "true" : "false");
-    if (selectedFile) {
-      formData.append("file", selectedFile);
+    formData.append("removeAttachment", latestRemoveAttachment ? "true" : "false");
+    if (latestSelectedFile) {
+      formData.append("file", latestSelectedFile);
     }
 
-    const isNew = !currentNoteId;
-    const url = isNew ? "/api/notes" : `/api/notes/${currentNoteId}`;
+    const isNew = !latestNoteId;
+    const url = isNew ? "/api/notes" : `/api/notes/${latestNoteId}`;
     const method = isNew ? "POST" : "PUT";
 
     try {
@@ -140,29 +165,18 @@ export default function NoteEditor() {
       saveInFlightRef.current = false;
 
       if (queuedSaveRef.current) {
-        const queuedNote = queuedSaveRef.current;
-        queuedSaveRef.current = null;
-        saveNote(queuedNote);
+        queuedSaveRef.current = false;
+        setTimeout(() => saveNote(editorStateRef.current), 0);
       }
     }
   }
 
-  useAutosave(
-    {
-      note,
-      currentNoteId,
-      currentAttachment,
-      removeAttachment,
-      selectedFileName: selectedFile?.name || "",
-    },
-    ({ note: latest }) => {
-      if (!loadedRef.current) {
-        return;
-      }
-      saveNote(latest);
-    },
-    800
-  );
+  useAutosave(autosaveSnapshot, () => {
+    if (!loadedRef.current) {
+      return;
+    }
+    saveNote(editorStateRef.current);
+  }, 800);
 
   function updateField(field, value) {
     setSaved(false);
@@ -189,7 +203,7 @@ export default function NoteEditor() {
           <button
             className="noteEditor__saveBtn"
             disabled={!note.title.trim()}
-            onClick={() => saveNote(note)}
+            onClick={() => saveNote(editorStateRef.current)}
           >
             Save
           </button>
@@ -245,15 +259,17 @@ export default function NoteEditor() {
             <label>
               <input
                 type="checkbox"
-                checked={removeAttachment}
-                onChange={(e) => {
-                  const checked = e.target.checked;
-                  setRemoveAttachment(checked);
-                  if (checked) {
-                    setSelectedFile(null);
-                  }
-                  setSaved(false);
-                }}
+            checked={removeAttachment}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setRemoveAttachment(checked);
+              if (checked) {
+                setSelectedFile(null);
+              } else if (currentAttachment) {
+                setLastUploadedFileName(currentAttachment.fileName || "");
+              }
+              setSaved(false);
+            }}
               />
               Remove current attachment
             </label>

@@ -7,6 +7,7 @@ import com.spartanscholars.backend.quiz.dto.FlashcardRequest;
 import com.spartanscholars.backend.quiz.dto.GenerateAiStudyMaterialRequest;
 import com.spartanscholars.backend.quiz.dto.FlashcardResponse;
 import com.spartanscholars.backend.quiz.dto.QuizDetailResponse;
+import com.spartanscholars.backend.quiz.dto.QuizIncorrectAnswerResponse;
 import com.spartanscholars.backend.quiz.dto.QuizOverviewResponse;
 import com.spartanscholars.backend.quiz.dto.QuizQuestionRequest;
 import com.spartanscholars.backend.quiz.dto.QuizQuestionResponse;
@@ -214,11 +215,20 @@ public class QuizService {
                 .toList();
         List<String> answers = request.answers() == null ? List.of() : request.answers();
         int correctCount = 0;
+        List<QuizIncorrectAnswerResponse> incorrectAnswers = new ArrayList<>();
         for (int i = 0; i < questions.size(); i++) {
-            String submitted = i < answers.size() ? normalizeAnswer(answers.get(i)) : "";
+            String rawSubmitted = i < answers.size() ? sanitize(answers.get(i)) : null;
+            String submitted = normalizeAnswer(rawSubmitted);
             String expected = normalizeAnswer(questions.get(i).getCorrectAnswer());
             if (!submitted.isBlank() && submitted.equals(expected)) {
                 correctCount++;
+            } else {
+                incorrectAnswers.add(new QuizIncorrectAnswerResponse(
+                        i + 1,
+                        questions.get(i).getPrompt(),
+                        rawSubmitted == null ? "No answer provided" : rawSubmitted,
+                        questions.get(i).getCorrectAnswer()
+                ));
             }
         }
 
@@ -228,7 +238,7 @@ public class QuizService {
         attempt.setUser(requireUser(user));
         attempt.setScore(score);
         quizAttemptRepository.save(attempt);
-        return new QuizSubmissionResponse(score, questions.size(), correctCount);
+        return new QuizSubmissionResponse(score, questions.size(), correctCount, incorrectAnswers);
     }
 
     @Transactional

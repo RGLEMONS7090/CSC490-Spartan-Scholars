@@ -105,6 +105,25 @@ export default function QuizTestPlayer() {
               <p>
                 Correct answers: {result.correctAnswers} / {result.totalQuestions}
               </p>
+
+              {result.incorrectAnswers?.length > 0 && (
+                <div className="quizReviewList">
+                  <h3>Review Incorrect Answers</h3>
+                  {result.incorrectAnswers.map((item) => (
+                    <article key={`${item.questionNumber}-${item.prompt}`} className="quizReviewItem">
+                      <p>
+                        <strong>Question {item.questionNumber}:</strong> {item.prompt}
+                      </p>
+                      <p>
+                        <strong>Your answer:</strong> {item.submittedAnswer}
+                      </p>
+                      <p>
+                        <strong>Correct answer:</strong> {item.correctAnswer}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              )}
             </article>
           )}
 
