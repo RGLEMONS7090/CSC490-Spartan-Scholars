@@ -2,6 +2,7 @@ package com.spartanscholars.backend.quiz;
 
 import com.spartanscholars.backend.quiz.dto.CreateFlashcardQuizRequest;
 import com.spartanscholars.backend.quiz.dto.CreateTestQuizRequest;
+import com.spartanscholars.backend.quiz.dto.GenerateAiStudyMaterialRequest;
 import com.spartanscholars.backend.quiz.dto.QuizDetailResponse;
 import com.spartanscholars.backend.quiz.dto.QuizOverviewResponse;
 import com.spartanscholars.backend.quiz.dto.QuizSubmissionRequest;
@@ -48,6 +49,22 @@ public class QuizController {
             @RequestBody CreateFlashcardQuizRequest request
     ) {
         return ResponseEntity.status(HttpStatus.CREATED).body(quizService.createFlashcardQuiz(user, request));
+    }
+
+    @PostMapping("/ai/test")
+    public ResponseEntity<QuizSummaryResponse> generateAiTestQuiz(
+            @AuthenticationPrincipal User user,
+            @RequestBody GenerateAiStudyMaterialRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(quizService.generateAiTestQuiz(user, request));
+    }
+
+    @PostMapping("/ai/flashcards")
+    public ResponseEntity<QuizSummaryResponse> generateAiFlashcards(
+            @AuthenticationPrincipal User user,
+            @RequestBody GenerateAiStudyMaterialRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(quizService.generateAiFlashcardQuiz(user, request));
     }
 
     @GetMapping("/{id}")

@@ -1,8 +1,10 @@
 package com.spartanscholars.backend.quiz;
 
+import com.spartanscholars.backend.ai.AiService;
 import com.spartanscholars.backend.quiz.dto.CreateFlashcardQuizRequest;
 import com.spartanscholars.backend.quiz.dto.CreateTestQuizRequest;
 import com.spartanscholars.backend.quiz.dto.FlashcardRequest;
+import com.spartanscholars.backend.quiz.dto.GenerateAiStudyMaterialRequest;
 import com.spartanscholars.backend.quiz.dto.FlashcardResponse;
 import com.spartanscholars.backend.quiz.dto.QuizDetailResponse;
 import com.spartanscholars.backend.quiz.dto.QuizOverviewResponse;
@@ -27,10 +29,16 @@ public class QuizService {
 
     private final StudyQuizRepository studyQuizRepository;
     private final QuizAttemptRepository quizAttemptRepository;
+    private final AiService aiService;
 
-    public QuizService(StudyQuizRepository studyQuizRepository, QuizAttemptRepository quizAttemptRepository) {
+    public QuizService(
+            StudyQuizRepository studyQuizRepository,
+            QuizAttemptRepository quizAttemptRepository,
+            AiService aiService
+    ) {
         this.studyQuizRepository = studyQuizRepository;
         this.quizAttemptRepository = quizAttemptRepository;
+        this.aiService = aiService;
     }
 
     @Transactional(readOnly = true)
@@ -148,6 +156,32 @@ public class QuizService {
 
         StudyQuiz saved = studyQuizRepository.save(quiz);
         return new QuizSummaryResponse(saved.getId(), saved.getTitle(), saved.getType(), saved.getFlashcards().size(), false, null, saved.getUpdatedAt());
+    }
+
+    @Transactional
+    public QuizSummaryResponse generateAiTestQuiz(User user, GenerateAiStudyMaterialRequest request) {
+        AiQuizGenerationSpec spec = validateAiGenerationRequest(request);
+        CreateTestQuizRequest generated = aiService.generateTestQuiz(
+                requireUser(user),
+                spec.mainTopic(),
+                spec.classLevel(),
+                spec.topicsToCover(),
+                spec.itemCount()
+        );
+        return createTestQuiz(user, generated);
+    }
+
+    @Transactional
+    public QuizSummaryResponse generateAiFlashcardQuiz(User user, GenerateAiStudyMaterialRequest request) {
+        AiQuizGenerationSpec spec = validateAiGenerationRequest(request);
+        CreateFlashcardQuizRequest generated = aiService.generateFlashcards(
+                requireUser(user),
+                spec.mainTopic(),
+                spec.classLevel(),
+                spec.topicsToCover(),
+                spec.itemCount()
+        );
+        return createFlashcardQuiz(user, generated);
     }
 
     @Transactional(readOnly = true)
@@ -287,5 +321,24 @@ public class QuizService {
 
     private String normalizeAnswer(String value) {
         return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private AiQuizGenerationSpec validateAiGenerationRequest(GenerateAiStudyMaterialRequest request) {
+        String mainTopic = requiredText(request.mainTopic(), "Main topic is required.");
+        String classLevel = requiredText(request.classLevel(), "Class level is required.");
+        String topicsToCover = requiredText(request.topicsToCover(), "Topics to cover are required.");
+        Integer itemCount = request.itemCount();
+        if (itemCount == null || itemCount < 1 || itemCount > 20) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Choose between 1 and 20 items.");
+        }
+        return new AiQuizGenerationSpec(mainTopic, classLevel, topicsToCover, itemCount);
+    }
+
+    private record AiQuizGenerationSpec(
+            String mainTopic,
+            String classLevel,
+            String topicsToCover,
+            int itemCount
+    ) {
     }
 }

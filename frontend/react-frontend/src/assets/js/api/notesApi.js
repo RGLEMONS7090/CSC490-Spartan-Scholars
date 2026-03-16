@@ -25,6 +25,13 @@ export async function apiFetch(url, options = {}) {
     
       return response;
  }
+
+export async function enhanceNoteWithAi(noteId) {
+  const response = await apiFetch(`/api/notes/${noteId}/enhance`, {
+    method: "POST",
+  });
+  return response.json();
+}
         
   
   

@@ -60,6 +60,22 @@ export async function createFlashcardQuiz(payload) {
   return response.json();
 }
 
+export async function createAiTestQuiz(payload) {
+  const response = await apiFetch("/api/quizzes/ai/test", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return response.json();
+}
+
+export async function createAiFlashcardQuiz(payload) {
+  const response = await apiFetch("/api/quizzes/ai/flashcards", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return response.json();
+}
+
 export async function fetchQuiz(id) {
   const response = await apiFetch(`/api/quizzes/${id}`);
   return response.json();

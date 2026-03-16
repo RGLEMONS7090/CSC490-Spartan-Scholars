@@ -73,6 +73,11 @@ public class NoteController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{id}/enhance")
+    public ResponseEntity<NoteResponse> enhance(@PathVariable Long id, @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(noteService.enhanceWithAi(user, id));
+    }
+
     @GetMapping("/{id}/download")
     public ResponseEntity<byte[]> downloadAttachment(@PathVariable Long id, @AuthenticationPrincipal User user) {
         Note note = noteService.getAttachment(user, id);

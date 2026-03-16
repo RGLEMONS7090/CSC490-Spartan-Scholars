@@ -21,6 +21,15 @@ export default function QuizCreate() {
 
         <section className="quizBuilderGrid">
           <article className="quizBuilderCard">
+            <span className="quizCard__tag">Create Quiz with AI</span>
+            <h2>Generate from topic, level, and coverage goals</h2>
+            <p>Have AI build a ready-to-take quiz or flashcard deck from your study topic.</p>
+            <Link className="quizActionBtn quizActionBtn--primary" to="/take-quizzes/create/ai">
+              Create Quiz with AI
+            </Link>
+          </article>
+
+          <article className="quizBuilderCard">
             <span className="quizCard__tag">Test Quiz</span>
             <h2>Multiple choice or written response</h2>
             <p>Create graded quizzes with per-question answer mode.</p>

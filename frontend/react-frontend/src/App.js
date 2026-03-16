@@ -20,6 +20,7 @@ import NoteDetail from "./pages/notes_pages/note-detail";
 import AiAssistant from "./pages/ai-assistant";
 import TakeQuizzes from "./pages/take-quizzes";
 import QuizCreate from "./pages/quizzes/quiz-create";
+import QuizAiGenerator from "./pages/quizzes/quiz-ai-generator";
 import QuizTestEditor from "./pages/quizzes/quiz-test-editor";
 import QuizFlashcardEditor from "./pages/quizzes/quiz-flashcard-editor";
 import QuizTestPlayer from "./pages/quizzes/quiz-test-player";
@@ -48,6 +49,7 @@ export default function App() {
           <Route path="/ai-assistant" element={<AiAssistant />} />
           <Route path="/take-quizzes" element={<TakeQuizzes />} />
           <Route path="/take-quizzes/create" element={<QuizCreate />} />
+          <Route path="/take-quizzes/create/ai" element={<QuizAiGenerator />} />
           <Route path="/take-quizzes/create/test" element={<QuizTestEditor />} />
           <Route path="/take-quizzes/create/flashcards" element={<QuizFlashcardEditor />} />
           <Route path="/take-quizzes/:id" element={<QuizTestPlayer />} />

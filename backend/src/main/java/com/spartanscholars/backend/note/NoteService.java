@@ -1,5 +1,6 @@
 package com.spartanscholars.backend.note;
 
+import com.spartanscholars.backend.ai.AiService;
 import com.spartanscholars.backend.note.dto.NoteResponse;
 import com.spartanscholars.backend.note.dto.NoteSummaryProjection;
 import com.spartanscholars.backend.note.dto.NoteSummaryResponse;
@@ -21,9 +22,11 @@ public class NoteService {
     private static final long MAX_UPLOAD_SIZE_BYTES = 10_485_760;
 
     private final NoteRepository noteRepository;
+    private final AiService aiService;
 
-    public NoteService(NoteRepository noteRepository) {
+    public NoteService(NoteRepository noteRepository, AiService aiService) {
         this.noteRepository = noteRepository;
+        this.aiService = aiService;
     }
 
     @Transactional(readOnly = true)
@@ -151,6 +154,15 @@ public class NoteService {
     public void delete(User user, Long noteId) {
         Note note = findOwnedNote(user, noteId);
         noteRepository.delete(note);
+    }
+
+    @Transactional
+    public NoteResponse enhanceWithAi(User user, Long noteId) {
+        Note note = findOwnedNote(user, noteId);
+        String enhancedContent = aiService.enhanceNote(user, note.getTitle(), note.getCategory(), note.getContent());
+        note.setContent(enhancedContent);
+        Note saved = noteRepository.save(note);
+        return toResponse(saved);
     }
 
     @Transactional(readOnly = true)
