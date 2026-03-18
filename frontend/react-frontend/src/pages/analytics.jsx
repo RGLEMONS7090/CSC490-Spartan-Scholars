@@ -1,167 +1,115 @@
-import { Link } from "react-router-dom";
-import {useState} from "react";
-import useTheme from "../assets/js/useTheme";
-import {logout} from "../assets/js/utils/logout";
-import {Helmet} from "react-helmet-async";
+import { useEffect, useState } from "react";
+import { Helmet } from "react-helmet-async";
+import { useNavigate } from "react-router-dom";
+import { fetchProfile } from "../assets/js/api/profileApi";
+
+const emptyStats = [
+  {
+    title: "Total Quizzes",
+    value: "--",
+    description: "No quiz data available yet.",
+  },
+  {
+    title: "Average Score",
+    value: "--",
+    description: "Scores will appear after quiz results are recorded.",
+  },
+  {
+    title: "Best Score",
+    value: "--",
+    description: "No completed attempts yet.",
+  },
+  {
+    title: "Needs Review",
+    value: "--",
+    description: "Review topics will show up here later.",
+  },
+];
 
 export default function Analytics() {
-  return(
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadCurrentUser() {
+      try {
+        await fetchProfile();
+        setError("");
+      } catch (err) {
+        setError(err.message);
+        if (err.message === "Your session has expired or you are not logged in.") {
+          navigate("/login", { replace: true });
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadCurrentUser();
+  }, [navigate]);
+
+  return (
     <>
       <Helmet>
-        <title> Your Analytics </title>
+        <title>Your Analytics</title>
       </Helmet>
 
-    <main className="main main--quizzes">
-      <section className="notesHeader">
-        
-        <div className="quizzesHeader__title">
-          <div className="quizzesHeader__icon">A</div>
+      <main className="main main--quizzes">
+        <section className="notesHeader">
+          <div className="quizzesHeader__title">
+            <div className="quizzesHeader__icon">A</div>
             <div>
               <h1>Learning Analytics</h1>
-              <p>Upload quiz results, view performance trends, and track progress.</p>
+              <p>Your analytics will appear here once quiz activity is connected to your account.</p>
             </div>
-        </div>
-
-        <div className="analyticsHeaderActions">
-          <button type="button" className="quizCard__button analyticsHeaderActions__button">
-            Filters
-          </button>
-          <button type="button" className="notesHeader__button">
-            Export
-          </button>
-        </div>
-      </section>
-
-      <section className="quizStats analyticsStats">
-        <article className="quizStatCard">
-          <h2>Total Quizzes</h2>
-          <div className="quizStatCard__value">12</div>
-          <p>Across all subjects</p>
-        </article>
-
-        <article className="quizStatCard">
-          <h2>Average Score</h2>
-          <div className="quizStatCard__value">86%</div>
-          <div className="quizStatCard__bar">
-            <span style={{ width: "86%" }} />
           </div>
-        </article>
-
-        <article className="quizStatCard">
-          <h2>Best Score</h2>
-          <div className="quizStatCard__value">98%</div>
-          <p>Latest high performance</p>
-        </article>
-
-        <article className="quizStatCard">
-          <h2>Needs Review</h2>
-          <div className="quizStatCard__value">2</div>
-          <p>Priority topics this week</p>
-        </article>
-      </section>
-
-      <section className="quizGrid analyticsPanels">
-        <article className="quizCard">
-          <div className="quizCard__top">
-            <span className="quizCard__tag">Performance Trend</span>
-            <span className="quizCard__level quizCard__level--medium">Weekly</span>
-          </div>
-
-          <h2>Score Trend</h2>
-          <p className="quizCard__meta">
-            Last 5 quiz attempts <span>•</span> Score %
-          </p>
-
-          <div className="analyticsChartWrap">
-            <canvas id="scoreTrendChart" aria-label="Score trend line chart" />
-          </div>
-        </article>
-
-        <article className="quizCard">
-          <div className="quizCard__top">
-            <span className="quizCard__tag">Data Import</span>
-            <span className="quizCard__level quizCard__level--easy">CSV</span>
-          </div>
-
-          <h2>Upload Results</h2>
-          <p className="quizCard__meta">Columns: student, quiz, score, date</p>
-
-          <div className="analyticsUpload">
-            <label htmlFor="csvFile" className="form-label">Choose file</label>
-              <input
-                type="file"
-                className="form-control analyticsUpload__input"
-                id="csvFile"
-                accept=".csv"
-              />
-
-              <button
-                type="button"
-                className="quizCard__button quizCard__button--primary"
-                id="uploadBtn">
-                  Upload
-              </button>
-
-          </div>
-        </article>
-      </section>
-
-      <section>
-        <article className="quizCard">
-          <div className="quizCard__top">
-            <span className="quizCard__tag">Recent Activity</span>
-            <span className="quizCard__level quizCard__level--easy">Updated</span>
-          </div>
-
-          <h2>Recent Quiz Results</h2>
-
-            <div className="table-responsive">
-              <table className="table align-middle analyticsTable">
-                <thead>
-                  <tr>
-                    <th>Student</th>
-                    <th>Quiz</th>
-                    <th>Score</th>
-                    <th>Date</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  <tr>
-                    <td>Aliyah</td>
-                    <td>CSC 410 - Quiz 1</td>
-                    <td>92%</td>
-                    <td>03/01/2026</td>
-                    <td>
-                      <span className="analyticsStatus analyticsStatus--great">Great</span>
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <td>Aliyah</td>
-                    <td>CSC 350 - Quiz 2</td>
-                    <td>78%</td>
-                    <td>02/26/2026</td>
-                    <td>
-                      <span className="analyticsStatus analyticsStatus--review">Review</span>
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <td>Aliyah</td>
-                    <td>SQL - Joins</td>
-                    <td>98%</td>
-                    <td>02/20/2026</td>
-                    <td>
-                      <span className="analyticsStatus analyticsStatus--great">Great</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </article>
         </section>
+
+        {loading ? (
+          <p>Loading analytics...</p>
+        ) : (
+          <>
+            <section className="quizStats analyticsStats">
+              {emptyStats.map((stat) => (
+                <article className="quizStatCard" key={stat.title}>
+                  <h2>{stat.title}</h2>
+                  <div className="quizStatCard__value">{stat.value}</div>
+                  <p>{stat.description}</p>
+                </article>
+              ))}
+            </section>
+
+            <section className="quizGrid analyticsPanels">
+              <article className="quizCard">
+                <div className="quizCard__top">
+                  <span className="quizCard__tag">Performance Trend</span>
+                  <span className="quizCard__level quizCard__level--medium">Waiting for data</span>
+                </div>
+
+                <h2>Score Trend</h2>
+                <p className="quizCard__meta">No quiz attempts have been recorded for this account yet.</p>
+
+                <div className="analyticsChartWrap d-flex align-items-center justify-content-center">
+                  <p className="text-center mb-0">No analytics to display.</p>
+                </div>
+              </article>
+
+              <article className="quizCard">
+                <div className="quizCard__top">
+                  <span className="quizCard__tag">Recent Activity</span>
+                  <span className="quizCard__level quizCard__level--easy">Empty</span>
+                </div>
+
+                <h2>Recent Quiz Results</h2>
+                <p className="quizCard__meta">Results tied to the logged-in user will appear here.</p>
+                <p className="mb-0">No quiz results available yet.</p>
+              </article>
+            </section>
+
+            {error && <p className="quizError">{error}</p>}
+          </>
+        )}
       </main>
     </>
   );
