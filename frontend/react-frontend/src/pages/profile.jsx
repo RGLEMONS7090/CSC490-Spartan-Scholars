@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { changePassword, deleteProfile, fetchProfile, updateProfile } from "../assets/js/api/profileApi";
 
 export default function Profile() {
@@ -176,6 +176,20 @@ export default function Profile() {
               >
                 {deleting ? "Deleting..." : "Delete Profile"}
               </button>
+            </section>
+
+            <section className="profileSection">
+              <span className="profileSection__label">Admin View</span>
+              <p className="profileSection__help">
+                {profile?.adminMode
+                  ? "Admin view is active for this session."
+                  : "Enter the admin password to temporarily access the protected admin view."}
+              </p>
+              <div className="profileSection__actions">
+                <Link className="quizActionBtn quizActionBtn--secondary" to="/profile/admin-access">
+                  Become an Admin!
+                </Link>
+              </div>
             </section>
 
             {error && <p className="quizError">{error}</p>}

@@ -50,7 +50,7 @@ public class AuthService {
         user.setRole(Role.USER);
 
         User savedUser = userRepository.save(user);
-        String token = jwtService.generateToken(savedUser.getEmail());
+        String token = jwtService.generateToken(savedUser.getEmail(), false);
         return AuthResponse.from(savedUser, token);
     }
 
@@ -63,7 +63,7 @@ public class AuthService {
         );
 
         User user = (User) authentication.getPrincipal();
-        String token = jwtService.generateToken(user.getEmail());
+        String token = jwtService.generateToken(user.getEmail(), false);
         return AuthResponse.from(user,token);
     }
 
@@ -80,7 +80,9 @@ public class AuthService {
             throw new UnauthenticatedException("You must be logged in to access this resource.");
         }
 
-        String token = jwtService.generateToken(user.getEmail());
+        boolean adminMode = authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+        String token = jwtService.generateToken(user.getEmail(), adminMode);
         return AuthResponse.from(user, token);
     }
 }

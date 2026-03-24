@@ -6,12 +6,16 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 public class JwtFilter extends OncePerRequestFilter {
@@ -45,11 +49,16 @@ public class JwtFilter extends OncePerRequestFilter {
             var userDetails = userDetailsService.loadUserByUsername(email);
 
             if (jwtService.isValid(token, userDetails.getUsername())) {
+                List<GrantedAuthority> authorities = new ArrayList<>(userDetails.getAuthorities());
+                if (jwtService.isAdminMode(token)
+                        && authorities.stream().noneMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()))) {
+                    authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+                }
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(
                                 userDetails,
                                 null,
-                                userDetails.getAuthorities()
+                                authorities
                         );
 
                 authToken.setDetails(

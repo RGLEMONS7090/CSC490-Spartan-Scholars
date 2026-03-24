@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {useState} from "react";
 import {Helmet} from "react-helmet-async";
 import useTheme from "../assets/js/useTheme";
+import { clearAdminSessionArtifacts } from "../assets/js/utils/adminSession";
 
 //Import images
 import logoLight from "../assets/images/logo_spartan_scholars.png";
@@ -37,6 +38,7 @@ export default function Signup() {
       }
 
       const data = await response.json();
+      clearAdminSessionArtifacts();
       localStorage.setItem("token", data.token);
 
       navigate("/");
@@ -163,7 +165,7 @@ export default function Signup() {
             data-theme-toggle=""
             aria-label="Switch to dark mode"
             onClick={toggleTheme}>
-              {theme == "dark" ? "☀" : "☽" }
+              {theme === "dark" ? "☀" : "☽" }
           </button>
 
           <p className="authHero__eyebrow">Build your academic profile</p>

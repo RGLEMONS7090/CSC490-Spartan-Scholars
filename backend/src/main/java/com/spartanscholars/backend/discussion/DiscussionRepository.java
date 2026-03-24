@@ -7,6 +7,10 @@ public interface DiscussionRepository extends JpaRepository<Discussion, Long> {
 
     List<Discussion> findAllByOrderByUpdatedAtDesc();
 
+    List<Discussion> findAllByOwnerIdOrderByUpdatedAtDesc(Long ownerId);
+
+    long countByOwnerId(Long ownerId);
+
     List<Discussion> findAllByOrderByCreatedAtDesc();
 
     List<Discussion> findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCaseOrderByUpdatedAtDesc(
