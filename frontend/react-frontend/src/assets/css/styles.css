@@ -4021,3 +4021,25 @@ body{
   font-size: 0.9rem;
   color: #555;
 }
+
+:root[data-theme="dark"] .noteEditor__preview,
+:root[data-theme="dark"] .noteDetail__attachments {
+  background: #1f2937;
+  border: 1px solid #374151;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+}
+
+:root[data-theme="dark"] .preview-pdf,
+:root[data-theme="dark"] .noteDetail__pdfPreview {
+  background: #111827;
+}
+
+:root[data-theme="dark"] .preview-doc,
+:root[data-theme="dark"] .noteDetail__noPreview,
+:root[data-theme="dark"] .noteDetail__attachments h3 {
+  color: #e5e7eb;
+}
+
+:root[data-theme="dark"] .noteDetail__downloadLink {
+  color: #93c5fd;
+}

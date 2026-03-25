@@ -208,24 +208,21 @@ return note;
         note.setTitle(trimmedTitle);
         note.setCategory(sanitize(category));
         String typedContent = content == null ? "" : content.trim();
-        //String extractedText = "";
+        String extractedText = "";
 
         if (file != null && !file.isEmpty()) {
-            //extractedText = attachFile(note, file);
-            attachFile(note, file);
+            extractedText = attachFile(note, file);
         }
 
-        //if (!extractedText.isBlank()) {
-            //if (typedContent.isBlank()) {
-                //note.setContent(extractedText);
-            //} else {
-                //note.setContent(typedContent + "\n\n" + extractedText);
-            //}
-        //} else {
-            //note.setContent(typedContent);
-        //}
-        // Don't merge extracted text into the note content
-        note.setContent(typedContent);
+        if (!extractedText.isBlank()) {
+            if (typedContent.isBlank()) {
+                note.setContent(extractedText);
+            } else {
+                note.setContent(typedContent + "\n\n" + extractedText);
+            }
+        } else {
+            note.setContent(typedContent);
+        }
 
     }
 

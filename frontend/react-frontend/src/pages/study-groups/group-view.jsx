@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { deleteStudyGroup, fetchStudyGroup, joinStudyGroup, sendStudyGroupMessage } from "../../assets/js/api/studyGroupsApi";
+
+const CHAT_POLL_INTERVAL_MS = 2000;
 
 function formatTimestamp(value) {
   if (!value) {
@@ -24,19 +26,51 @@ export default function StudyGroupView() {
   const [sending, setSending] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
+  const chatFeedRef = useRef(null);
+  const latestMessageIdRef = useRef(null);
 
   useEffect(() => {
-    async function loadGroup() {
+    let cancelled = false;
+
+    async function loadGroup(showError = true) {
       try {
         const data = await fetchStudyGroup(id);
-        setGroup(data);
+        if (!cancelled) {
+          setGroup(data);
+          setError("");
+        }
       } catch (err) {
-        setError(err.message);
+        if (!cancelled && showError) {
+          setError(err.message);
+        }
       }
     }
 
     loadGroup();
+
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        loadGroup(false);
+      }
+    }, CHAT_POLL_INTERVAL_MS);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
   }, [id]);
+
+  useEffect(() => {
+    if (!group?.messages?.length || !chatFeedRef.current) {
+      return;
+    }
+
+    const newestMessageId = group.messages[group.messages.length - 1]?.id ?? null;
+    if (newestMessageId && newestMessageId !== latestMessageIdRef.current) {
+      latestMessageIdRef.current = newestMessageId;
+      chatFeedRef.current.scrollTop = chatFeedRef.current.scrollHeight;
+    }
+  }, [group]);
 
   async function handleJoin() {
     setJoining(true);
@@ -136,7 +170,7 @@ export default function StudyGroupView() {
               <p>Use this chatroom to coordinate study sessions and ask quick questions.</p>
             </div>
 
-            <div className="groupChatFeed">
+            <div className="groupChatFeed" ref={chatFeedRef}>
               {group.messages.length === 0 && (
                 <p className="groupChatFeed__empty">No messages yet. Start the conversation.</p>
               )}

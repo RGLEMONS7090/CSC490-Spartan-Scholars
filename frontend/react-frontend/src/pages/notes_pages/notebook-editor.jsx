@@ -52,6 +52,31 @@ export default function NoteEditor() {
     });
   }
 
+  function buildAttachmentState(savedNote) {
+    return savedNote.hasAttachment
+      ? { fileName: savedNote.fileName, fileContentType: savedNote.fileContentType }
+      : null;
+  }
+
+  function mergeExtractedContent(baseContent, savedContent, currentContent) {
+    if (!savedContent || savedContent === baseContent) {
+      return currentContent;
+    }
+
+    if (currentContent === baseContent) {
+      return savedContent;
+    }
+
+    if (savedContent.startsWith(baseContent)) {
+      const extractedSuffix = savedContent.slice(baseContent.length);
+      if (extractedSuffix && !currentContent.endsWith(extractedSuffix)) {
+        return currentContent + extractedSuffix;
+      }
+    }
+
+    return currentContent;
+  }
+
   const autosaveSnapshot = buildSnapshot(
     note,
     currentNoteId,
@@ -141,29 +166,69 @@ export default function NoteEditor() {
     try {
       const res = await apiFetch(url, { method, body: formData });
       const savedNote = await res.json();
+      const nextAttachment = buildAttachmentState(savedNote);
+      const persistedSnapshot = buildSnapshot(
+        {
+          title: savedNote.title || "",
+          category: savedNote.category || "",
+          content: savedNote.content || "",
+        },
+        savedNote.id,
+        nextAttachment,
+        false,
+        null
+      );
+      const currentState = editorStateRef.current;
+      const stateChangedSinceRequest = buildSnapshot(
+        currentState.note,
+        currentState.noteId,
+        currentState.attachment,
+        currentState.removeAttachment,
+        currentState.selectedFile
+      ) !== snapshot;
 
-      const nextNote = {
-        title: savedNote.title || "",
-        category: savedNote.category || "",
-        content: savedNote.content || "",
-      };
-      const nextAttachment = savedNote.hasAttachment
-        ? { fileName: savedNote.fileName, fileContentType: savedNote.fileContentType }
-        : null;
-
-      setNote(nextNote);
+      lastSavedSnapshotRef.current = persistedSnapshot;
       setCurrentAttachment(nextAttachment);
       setLastUploadedFileName(savedNote.hasAttachment ? (savedNote.fileName || "") : "");
       setSelectedFile(null);
       setRemoveAttachment(false);
-      lastSavedSnapshotRef.current = buildSnapshot(nextNote, savedNote.id, nextAttachment, false, null);
+
+      if (stateChangedSinceRequest) {
+        const mergedNote = {
+          title: currentState.note.title === latestNote.title ? (savedNote.title || "") : currentState.note.title,
+          category: currentState.note.category === latestNote.category ? (savedNote.category || "") : currentState.note.category,
+          content: mergeExtractedContent(latestNote.content || "", savedNote.content || "", currentState.note.content || ""),
+        };
+        setNote(mergedNote);
+        editorStateRef.current = {
+          note: mergedNote,
+          noteId: savedNote.id,
+          attachment: nextAttachment,
+          removeAttachment: false,
+          selectedFile: null,
+        };
+        setSaved(false);
+      } else {
+        const nextNote = {
+          title: savedNote.title || "",
+          category: savedNote.category || "",
+          content: savedNote.content || "",
+        };
+        setNote(nextNote);
+        editorStateRef.current = {
+          note: nextNote,
+          noteId: savedNote.id,
+          attachment: nextAttachment,
+          removeAttachment: false,
+          selectedFile: null,
+        };
+        setSaved(true);
+      }
 
       if (isNew) {
         setCurrentNoteId(savedNote.id);
         navigate(`/notes/edit/${savedNote.id}`, { replace: true });
       }
-
-      setSaved(true);
       return savedNote;
     } finally {
       saveInFlightRef.current = false;
