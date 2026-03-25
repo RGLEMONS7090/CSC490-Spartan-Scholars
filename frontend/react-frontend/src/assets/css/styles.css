@@ -28,6 +28,7 @@
   --noticeBg: rgba(248,234,173,.18);
   --noticeText: #9a4d00;
   --noticeBorder: #e8c85b;
+  --icon-bg:#121c4e;
 }
 
 :root[data-theme="dark"]{
@@ -58,10 +59,12 @@
   --noticeBg: rgba(120,53,15,.28);
   --noticeText: #fbbf24;
   --noticeBorder: rgba(251,191,36,.45);
+  --icon-bg:#121c4e;
 }
 
 *{ box-sizing: border-box; }
 
+/* for all pages: except for Login and Signup */
 body{
   margin: 0;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
@@ -73,6 +76,7 @@ body{
   background:var(--bg)
 }
 
+/* Login + Signup Page */
 .authPage{
   min-height: 100vh;
   background:
@@ -340,7 +344,7 @@ body{
   z-index: 40;
 }
 
-.settingsMenu__trigger{
+/*.settingsMenu__trigger{
   list-style: none;
   display: grid;
   place-items: center;
@@ -351,17 +355,59 @@ body{
   background: #2f5fb3;
   cursor: pointer;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+} 
+.settingsMenu__trigger::-webkit-details-marker{
+  display: none;
+} */
+
+.settingsMenu__trigger {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 4px 10px;
+  height: 42px;
+
+  border-radius: 12px;
+  border: 1px solid #234a99;
+  background: #2f5fb3;
+
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
 }
 
-.settingsMenu__trigger::-webkit-details-marker{
+.settingsMenu__trigger::-webkit-details-marker {
   display: none;
 }
 
-.settingsMenu__gear{
+.settingsMenu__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.settingsMenu__name {
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.settingsMenu__trigger {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.settingsMenu__trigger:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18);
+}
+/*.settingsMenu__gear{
   font-size: 20px;
   color: #ffffff;
   line-height: 1;
-}
+} */
 
 .settingsMenu__panel{
   position: absolute;
@@ -501,6 +547,7 @@ body{
   border-radius: 999px;
   border: none;
   background: rgba(29,79,174,.15);
+  text-decoration: none;
 }
 
 :root[data-theme="dark"] .profileBtn__text{
@@ -566,6 +613,11 @@ body{
   place-items: center;
 }
 
+.profileBtn__text{
+  text-decoration: none;
+  color: black;
+}
+
 /* Layout */
 .shell{
   display: grid;
@@ -620,6 +672,11 @@ body{
   background: rgba(255,255,255,.18);
   display: grid;
   place-items: center;
+}
+
+.askAiBtn__spark img{
+  width: 95%;
+  height: 95%;
 }
 
 .askAiBtn--active{
@@ -698,7 +755,7 @@ body{
   flex-direction: column;
 }
 
-.featureCard__iconWrap{
+/*.featureCard__iconWrap{
   width: 54px;
   height: 54px;
   border-radius: 14px;
@@ -706,6 +763,23 @@ body{
   display: grid;
   place-items: center;
   margin-bottom: 10px;
+} */
+
+.featureCard__iconWrap{
+  width: 65px;
+  height: 65px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden; 
+  background: var(--icon-bg); 
+  border-radius: 12px; 
+}
+
+.featureCard__iconWrap img {
+  max-width: 80%;
+  max-height: 80%;
+  object-fit: contain;
 }
 
 .featureCard__iconWrap--purple{ background: rgba(122,60,255,.16); }
@@ -2640,6 +2714,20 @@ body{
   color: var(--text);
 }
 
+.profilePhotoRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.profilePhotoPreview {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border-color);
+}
+
 .profileSection__actions{
   display: flex;
   align-items: center;
@@ -3040,7 +3128,6 @@ body{
 .noteEditor {
   display: flex;
   flex-direction: column;
-  height: 100vh;
   padding: 0;
   background: var(--background, #f8f9fa);
 }
@@ -3521,3 +3608,241 @@ body{
   background: var(--btnBlueHover);
 }
 
+/* Profile Image */
+/* Fullscreen dark overlay */
+.cropperModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+/* White card container */
+.cropperContainer {
+  background: var(--bg);
+  width: 380px;
+  height: 480px;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+}
+
+/* Area where the cropper lives */
+.cropperArea {
+  position: relative;
+  flex: 1;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Controls under the cropper */
+.cropperControls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Buttons row */
+.cropperButtons {
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Notebook Area */
+.modern-textarea {
+  width: 100%;
+  min-height: 300px;
+  padding: 18px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  background: #fafafa;
+  font-size: 1rem;
+  line-height: 1.6;
+  resize: vertical;
+  transition: background 0.2s ease, border 0.2s ease;
+}
+
+.modern-textarea:focus {
+  background: #fff;
+  border-color: #4a90e2;
+  outline: none;
+}
+.noteEditor__preview {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #f7f7f7;
+  border: 1px solid #e0e0e0;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 250px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.preview-pdf {
+  width: 100%;
+  height: 300px;
+  border: none;
+  border-radius: 8px;
+}
+
+.preview-doc {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.95rem;
+}
+
+.noteEditor__preview {
+  margin-top: 20px;
+  padding: 16px;
+  background: var(--background);
+  border: none;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.preview-image {
+  width: 100%;
+  max-height: 350px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.preview-pdf {
+  width: 100%;
+  height: 450px;
+  border: none;
+  border-radius: 8px;
+}
+
+.noteEditor__topRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.noteEditor__left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.noteEditor__right {
+  width: 450px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--background);
+  border: none;
+  border-radius: 10px;
+  color: black;
+}
+
+:root[data-theme="dark"] .noteEditor__right{
+  color: white;
+}
+
+.fileLabel {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.fileInfo {
+  font-size: 0.9rem;
+  color: black;
+  word-break: break-all;
+}
+
+:root[data-theme="dark"] .fileInfo{
+  color: white;
+}
+
+.removeFile {
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#noteFile{
+  display:none;
+}
+
+.uploadBtn {
+  display: inline-block;
+  padding: 10px 16px;
+  background: var(--btnBlue);
+  color: white;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.2s ease;
+}
+
+.uploadBtn:hover {
+  background: #3a78c2;
+}
+
+.uploadBtn:active {
+  background: #3369a8;
+}
+
+.fileError {
+  color: #d9534f; /* soft red */
+  font-size: 0.9rem;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.noteDetail__attachments {
+  margin-top: 20px;
+  padding: 16px;
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+}
+
+.noteDetail__downloadLink {
+  display: inline-block;
+  margin-bottom: 12px;
+  font-weight: 600;
+  color: #4a90e2;
+}
+
+.noteDetail__imagePreview {
+  width: 100%;
+  max-height: 350px;
+  object-fit: contain;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+.noteDetail__pdfPreview {
+  width: 100%;
+  height: 450px;
+  border: none;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+.noteDetail__noPreview {
+  margin-top: 10px;
+  font-size: 0.9rem;
+  color: #555;
+}

@@ -22,6 +22,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.multipart.MultipartResolver;
+import org.springframework.web.multipart.support.StandardServletMultipartResolver;
 
 //import java.util.List;
 @Configuration
@@ -75,12 +77,19 @@ public class SecurityConfig {
                         "/take-quizzes.html"
                     ).permitAll()
                     .requestMatchers("/api/auth/**", "/favicon.ico").permitAll()
+                    .requestMatchers("/uploads/**").permitAll()
+                    .requestMatchers("/api/notes/*/download").permitAll()
+                    .requestMatchers("/api/notes/*/preview").permitAll()
                     .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
             .logout(logout -> logout.disable())
             .formLogin(form -> form.disable())
             .httpBasic(basic -> basic.disable());
+
+        http.headers(headers -> headers
+            .frameOptions(frame -> frame.disable())
+        );
 
         return http.build();
     }
@@ -111,5 +120,10 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    @Bean
+    public MultipartResolver multipartResolver(){
+        return new StandardServletMultipartResolver();
     }
 }

@@ -1,8 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
-import {useState} from "react";
+import {useState, useContext} from "react";
 import {Helmet} from "react-helmet-async";
 import useTheme from "../assets/js/useTheme";
 import { clearAdminSessionArtifacts } from "../assets/js/utils/adminSession";
+import {ProfileContext} from "../context/profile-context";
 
 //Import images
 import logoLight from "../assets/images/logo_spartan_scholars.png";
@@ -20,6 +21,8 @@ export default function Signup() {
   const[email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const[error, setError] = useState("");
+
+  const {setProfile} = useContext(ProfileContext);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -40,6 +43,7 @@ export default function Signup() {
       const data = await response.json();
       clearAdminSessionArtifacts();
       localStorage.setItem("token", data.token);
+      setProfile(data.user);
 
       navigate("/");
     } catch (err) {

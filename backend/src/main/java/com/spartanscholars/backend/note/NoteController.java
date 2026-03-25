@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/notes")
@@ -61,7 +62,7 @@ public class NoteController {
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String content,
             @RequestParam(required = false) MultipartFile file,
-            @RequestParam(defaultValue = "false") boolean removeAttachment
+            @RequestParam(defaultValue = "false") Boolean removeAttachment
     ) {
         NoteResponse updated = noteService.update(user, id, title, category, content, file, removeAttachment);
         return ResponseEntity.ok(updated);
@@ -78,16 +79,31 @@ public class NoteController {
         return ResponseEntity.ok(noteService.enhanceWithAi(user, id));
     }
 
+    @GetMapping("/{id}/preview")
+    public ResponseEntity<byte[]> previewAttachment(@PathVariable Long id) {
+        Note note = noteService.getAttachment(id);
+
+        if (note.getFileData() == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No attachment found.");
+        }
+
+        byte[] fileBytes = Base64.getDecoder().decode(note.getFileData());
+
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType(note.getFileContentType()))
+            .body(fileBytes);
+    }
+
     @GetMapping("/{id}/download")
-    public ResponseEntity<byte[]> downloadAttachment(@PathVariable Long id, @AuthenticationPrincipal User user) {
-        Note note = noteService.getAttachment(user, id);
+    public ResponseEntity<byte[]> downloadAttachment(@PathVariable Long id) {
+        Note note = noteService.getAttachment(id);
         String fileName = note.getFileName() == null ? "attachment" : note.getFileName();
         MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
         if (note.getFileContentType() != null) {
             mediaType = MediaType.parseMediaType(note.getFileContentType());
         }
         byte[] bytes = Base64.getDecoder().decode(note.getFileData());
-
+                
         return ResponseEntity.ok()
                 .contentType(mediaType)
                 .header(

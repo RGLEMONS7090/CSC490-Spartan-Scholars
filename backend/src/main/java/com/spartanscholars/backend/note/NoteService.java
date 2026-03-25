@@ -166,12 +166,31 @@ public class NoteService {
     }
 
     @Transactional(readOnly = true)
-    public Note getAttachment(User user, Long noteId) {
-        Note note = findOwnedNote(user, noteId);
-        if (note.getFileData() == null || note.getFileData().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No attachment found for this note.");
-        }
-        return note;
+    public Note getAttachment(Long noteId) {
+        Note note = noteRepository.findById(noteId)
+        .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Note not found."
+        ));
+
+if (note.getFileData() == null || note.getFileData().isBlank()) {
+    throw new ResponseStatusException(
+            HttpStatus.NOT_FOUND,
+            "No attachment found for this note."
+    );
+}
+
+return note;
+
+
+       
+       
+       
+        //Note note = noteRepository.findById(noteId);
+        //if (note.getFileData() == null || note.getFileData().isBlank()) {
+            //throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No attachment found for this note.");
+        //}
+        //return note;
     }
 
     private void applyNoteFields(
@@ -189,21 +208,25 @@ public class NoteService {
         note.setTitle(trimmedTitle);
         note.setCategory(sanitize(category));
         String typedContent = content == null ? "" : content.trim();
-        String extractedText = "";
+        //String extractedText = "";
 
         if (file != null && !file.isEmpty()) {
-            extractedText = attachFile(note, file);
+            //extractedText = attachFile(note, file);
+            attachFile(note, file);
         }
 
-        if (!extractedText.isBlank()) {
-            if (typedContent.isBlank()) {
-                note.setContent(extractedText);
-            } else {
-                note.setContent(typedContent + "\n\n" + extractedText);
-            }
-        } else {
-            note.setContent(typedContent);
-        }
+        //if (!extractedText.isBlank()) {
+            //if (typedContent.isBlank()) {
+                //note.setContent(extractedText);
+            //} else {
+                //note.setContent(typedContent + "\n\n" + extractedText);
+            //}
+        //} else {
+            //note.setContent(typedContent);
+        //}
+        // Don't merge extracted text into the note content
+        note.setContent(typedContent);
+
     }
 
     private String attachFile(Note note, MultipartFile file) {
@@ -212,12 +235,28 @@ public class NoteService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Uploaded file name is invalid.");
         }
         String lower = originalName.toLowerCase(Locale.ROOT);
-        if (!(lower.endsWith(".pdf") || lower.endsWith(".doc") || lower.endsWith(".docx"))) {
+
+        boolean allowed =
+        lower.endsWith(".pdf") ||
+        lower.endsWith(".doc") ||
+        lower.endsWith(".docx") ||
+        lower.endsWith(".jpg") ||
+        lower.endsWith(".jpeg") ||
+        lower.endsWith(".png");
+
+        if (!allowed) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Only PDF, DOC, and DOCX files are supported."
+                    "Only PDF, DOC, DOCX, JPG, and PNG files are supported."
             );
         }
+        
+        //if (!(lower.endsWith(".pdf") || lower.endsWith(".doc") || lower.endsWith(".docx"))) {
+            //throw new ResponseStatusException(
+                    //HttpStatus.BAD_REQUEST,
+                    //"Only PDF, DOC, and DOCX files are supported."
+            //);
+        //}
         if (file.getSize() > MAX_UPLOAD_SIZE_BYTES) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,

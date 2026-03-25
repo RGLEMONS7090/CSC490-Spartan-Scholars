@@ -78,9 +78,37 @@ export default function NoteDetails() {
       </article>
 
       {note.fileName && (
-        <a href={`/api/notes/${id}/download`} className="noteDetails__attachment">
-          Download Attachment ({note.fileName})
-        </a>
+        <div className="noteDetail__attachments">
+          <h3>Attachment</h3>
+          {/* Download Link */}
+          <a href={`http://localhost:8080/api/notes/${id}/download`} target="_blank" rel="noopener noreferrer" className="noteDetail__downloadLink">
+           {note.fileName}
+          </a>
+
+        {note.fileContentType?.startsWith("image/") && (
+          <img
+            src={`http://localhost:8080/api/notes/${id}/preview`}
+            alt={note.fileName}
+            className="noteDetail__imagePreview"
+          />
+        )}
+
+        {/* PDF PREVIEW */}
+        {note.fileContentType === "application/pdf" && (
+          <iframe
+            src={`http://localhost:8080/api/notes/${id}/preview`}
+            className="noteDetail__pdfPreview"
+            title="PDF Preview"
+          />
+        )}
+
+        {/* WORD FILE (no preview) */}
+        {note.fileContentType?.includes("word") && (
+          <p className="noteDetail__noPreview">
+            Word documents cannot be previewed. Use the download link above.
+          </p>
+        )}
+        </div>
       )}
     </main>
   );

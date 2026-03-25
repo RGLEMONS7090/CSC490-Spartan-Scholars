@@ -1,8 +1,10 @@
 import { Link, useNavigate } from "react-router-dom";
-import {useState} from "react";
+import {useState, useContext} from "react";
 import {Helmet} from "react-helmet-async";
 import useTheme from "../assets/js/useTheme";
 import { clearAdminSessionArtifacts } from "../assets/js/utils/adminSession";
+import axios from "axios";
+import { ProfileContext } from "../context/profile-context";
 
 import logoLight from "../assets/images/logo_spartan_scholars.png";
 import logoLightText from "../assets/images/text_logo.png";
@@ -17,6 +19,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const { setProfile } = useContext(ProfileContext);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -37,6 +40,12 @@ export default function Login() {
       const data = await response.json();
       clearAdminSessionArtifacts();
       localStorage.setItem("token", data.token);
+      // Apply token to axios immediately
+      axios.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
+
+      // Refresh ProfileContext
+      const profileRes = await axios.get("http://localhost:8080/api/profile");
+      setProfile(profileRes.data);
 
       navigate("/");
     } catch (err) {
