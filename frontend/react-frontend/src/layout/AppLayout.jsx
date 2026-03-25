@@ -195,7 +195,7 @@ export default function AppLayout() {
             </NavLink>
 
             <NavLink to="/explore-topics" className={({ isActive }) => "nav__item" + (isActive ? " nav__item--active" : "")}>
-              Explore Topics
+              UNCG Planner
             </NavLink>
 
             <NavLink to="/discussion-board" className={({ isActive }) => "nav__item" + (isActive ? " nav__item--active" : "")}>

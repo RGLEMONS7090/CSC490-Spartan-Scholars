@@ -8,7 +8,7 @@ function buildHeaders(options = {}) {
 
   const headers = new Headers(options.headers || {});
   headers.set("Authorization", `Bearer ${token}`);
-  if (options.body && !headers.has("Content-Type")) {
+  if (options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
   return headers;
@@ -43,6 +43,17 @@ export async function sendAiChat(message, history) {
   const response = await apiFetch("/api/ai/chat", {
     method: "POST",
     body: JSON.stringify({ message, history }),
+  });
+  return response.json();
+}
+
+export async function parseDegreeAuditPdf(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await apiFetch("/api/ai/degree-audit", {
+    method: "POST",
+    body: formData,
   });
   return response.json();
 }

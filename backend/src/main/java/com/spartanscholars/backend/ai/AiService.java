@@ -5,9 +5,11 @@ import com.spartanscholars.backend.ai.dto.AiGeneratedTestQuizPayload;
 import com.spartanscholars.backend.ai.dto.AiChatMessageRequest;
 import com.spartanscholars.backend.ai.dto.AiChatRequest;
 import com.spartanscholars.backend.ai.dto.AiChatResponse;
+import com.spartanscholars.backend.ai.dto.DegreeAuditParseResponse;
 import com.spartanscholars.backend.quiz.dto.CreateFlashcardQuizRequest;
 import com.spartanscholars.backend.quiz.dto.CreateTestQuizRequest;
 import com.spartanscholars.backend.user.User;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -68,6 +70,16 @@ public class AiService {
             Cover the requested subtopics as evenly as possible.
             Keep the difficulty appropriate for the requested class level.
             Return only valid JSON matching the provided schema.
+            """;
+    private static final String DEGREE_AUDIT_PARSER_INSTRUCTIONS = """
+            You are Spartan Scholars AI, helping a student interpret a University of North Carolina Greensboro Degree Works PDF audit.
+            Read the extracted audit text and return only valid JSON matching the provided schema.
+            Focus on identifying the student's university, degree, major, concentration, minor, completed course codes, in-progress course codes, and remaining course codes.
+            Prefer exact course codes that appear in the audit, such as CSC 130 or MAT 191.
+            Do not invent courses that do not appear in the text.
+            If a field is missing, return an empty string for text fields and an empty array for list fields.
+            Keep the summary short and factual.
+            The university should be UNC Greensboro or University of North Carolina Greensboro when present.
             """;
 
     private final RestClient restClient;
@@ -236,6 +248,50 @@ public class AiService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public DegreeAuditParseResponse parseDegreeAudit(User user, String fileName, byte[] bytes) {
+        requireAuthenticatedUser(user);
+        ensureApiKeyConfigured();
+
+        if (fileName == null || !fileName.toLowerCase(Locale.ROOT).endsWith(".pdf")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Please upload a PDF exported from Degree Works.");
+        }
+
+        String extractedText;
+        try {
+            extractedText = DegreeAuditPdfExtractor.extract(bytes);
+        } catch (IOException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to read the uploaded Degree Works PDF.");
+        }
+
+        String sanitizedText = sanitize(extractedText);
+        if (sanitizedText == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The uploaded PDF did not contain readable text.");
+        }
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("model", model);
+        payload.put("instructions", DEGREE_AUDIT_PARSER_INSTRUCTIONS);
+        payload.put("input", List.of(Map.of(
+                "role", "user",
+                "content", "Degree Works audit text:\n\n" + sanitizedText
+        )));
+        payload.put("max_output_tokens", 2200);
+        payload.put("text", Map.of("format", buildDegreeAuditFormat()));
+
+        JsonNode responseBody = executeResponseRequest(payload);
+        String json = extractReply(responseBody);
+        if (json == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "OpenAI returned an empty degree audit parse.");
+        }
+
+        try {
+            return objectMapper.readValue(json, DegreeAuditParseResponse.class);
+        } catch (RuntimeException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "OpenAI returned invalid degree audit data.");
+        }
+    }
+
     private JsonNode executeResponseRequest(Map<String, Object> payload) {
         try {
             return restClient.post()
@@ -333,6 +389,50 @@ public class AiService {
         return Map.of(
                 "type", "json_schema",
                 "name", "generated_flashcard_deck",
+                "strict", true,
+                "schema", schema
+        );
+    }
+
+    private Map<String, Object> buildDegreeAuditFormat() {
+        Map<String, Object> schema = new LinkedHashMap<>();
+        schema.put("type", "object");
+        schema.put("additionalProperties", false);
+        schema.put("properties", Map.of(
+                "university", Map.of("type", "string"),
+                "degreeName", Map.of("type", "string"),
+                "major", Map.of("type", "string"),
+                "concentration", Map.of("type", "string"),
+                "minor", Map.of("type", "string"),
+                "completedCourses", Map.of(
+                        "type", "array",
+                        "items", Map.of("type", "string")
+                ),
+                "inProgressCourses", Map.of(
+                        "type", "array",
+                        "items", Map.of("type", "string")
+                ),
+                "remainingCourses", Map.of(
+                        "type", "array",
+                        "items", Map.of("type", "string")
+                ),
+                "summary", Map.of("type", "string")
+        ));
+        schema.put("required", List.of(
+                "university",
+                "degreeName",
+                "major",
+                "concentration",
+                "minor",
+                "completedCourses",
+                "inProgressCourses",
+                "remainingCourses",
+                "summary"
+        ));
+
+        return Map.of(
+                "type", "json_schema",
+                "name", "degree_audit_parse",
                 "strict", true,
                 "schema", schema
         );
