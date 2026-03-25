@@ -4,8 +4,12 @@ import useTheme from "../assets/js/useTheme";
 import {logout} from "../assets/js/utils/logout";
 import {Helmet} from "react-helmet-async";
 
+import notes_icon from "../assets/images/notes_icon.png";
+import discussion_icon from "../assets/images/discussion_icon.png";
+import ai_icon from "../assets/images/ai_icon.png";
+
 export default function Index() {
-  
+
   return (
     <>
       <Helmet>
@@ -24,7 +28,10 @@ export default function Index() {
               <div className="col-12 col-md-6 col-xl-4">
                 <article className="featureCard h-100">
                   <div className="featureCard__iconWrap">
-                    <span className="featureCard__icon">N</span>
+                    {/*<span className="featureCard__icon">N</span> */}
+                    <img
+                    src={notes_icon}
+                    alt="Notes Icon" />
                   </div>
                   <h2>Notes &amp; Summaries</h2>
                   <p>Create and organize study notes with fast search and tagging.</p>
@@ -42,8 +49,11 @@ export default function Index() {
               {/* Discussion Board */}
               <div className="col-12 col-md-6 col-xl-4">
                 <article className="featureCard h-100">
-                  <div className="featureCard__iconWrap featureCard__iconWrap--purple">
-                    <span className="featureCard__icon">D</span>
+                  <div className="featureCard__iconWrap">
+                    <img
+                      src={discussion_icon}
+                      alt="Discussion Icon" />
+                    {/*<span className="featureCard__icon">D</span>*/}
                   </div>
                   <h2>Discussion Board</h2>
                   <p>Join communities, ask questions, and collaborate with peers.</p>
@@ -61,8 +71,11 @@ export default function Index() {
               {/* AI Summarizer */}
               <div className="col-12 col-md-6 col-xl-4">
                 <article className="featureCard h-100">
-                  <div className="featureCard__iconWrap featureCard__iconWrap--gold">
-                    <span className="featureCard__icon">*</span>
+                  <div className="featureCard__iconWrap">
+                    <img
+                      src={ai_icon}
+                      alt="AI Icon" />
+                    {/*<span className="featureCard__icon">*</span>*/}
                   </div>
                   <h2>AI Note Summarizer</h2>
                   <p>Turn notes into summaries, flashcards, and key points in seconds.</p>

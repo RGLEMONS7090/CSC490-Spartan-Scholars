@@ -4,6 +4,8 @@ import AppLayout from "./layout/AppLayout";
 // importing react router
 import {BrowserRouter, Routes, Route} from "react-router-dom";
 
+import {ProfileProvider} from "./context/profile-context";
+
 //importing pages
 import Index from "./pages/index";
 import Login from "./pages/login";
@@ -38,6 +40,7 @@ import NoteView from "./pages/notes_pages/note-detail";
 export default function App() {
   
   return (
+    <ProfileProvider>
     <BrowserRouter>
       <Routes>
         <Route element={<AppLayout />}>
@@ -76,5 +79,6 @@ export default function App() {
       </Routes>
 
     </BrowserRouter>  
+    </ProfileProvider>
   );
 }

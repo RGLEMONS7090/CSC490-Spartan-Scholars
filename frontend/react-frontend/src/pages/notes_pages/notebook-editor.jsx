@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { apiFetch } from "../../assets/js/api/notesApi";
 import useAutosave from "../../assets/js/utils/useAutosave";
+import {Helmet} from "react-helmet-async";
 
 export default function NoteEditor() {
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -18,6 +20,7 @@ export default function NoteEditor() {
   const [removeAttachment, setRemoveAttachment] = useState(false);
   const [lastUploadedFileName, setLastUploadedFileName] = useState("");
   const [currentNoteId, setCurrentNoteId] = useState(id ?? null);
+  const [fileError, setFileError] = useState("");
 
   const loadedRef = useRef(false);
   const saveInFlightRef = useRef(false);
@@ -102,7 +105,8 @@ export default function NoteEditor() {
       return;
     }
 
-    if (!latestNote.title.trim()) {
+    if (!latestNote.title || !latestNote.title.trim()) {
+      setSaved(true);
       return;
     }
 
@@ -187,6 +191,11 @@ export default function NoteEditor() {
   }
 
   return (
+    <>
+    <Helmet>
+        <title>Edit Notebook</title>
+    </Helmet>
+
     <div className="noteEditor">
       <header className="noteEditor__header">
         <div className="noteEditor__nav">
@@ -211,6 +220,8 @@ export default function NoteEditor() {
       </header>
 
       <div className="noteEditor__form">
+        <div className="noteEditor__topRow">
+        <div className="noteEditor__left">
         <input
           className="noteEditor__title"
           value={note.title}
@@ -224,16 +235,45 @@ export default function NoteEditor() {
           onChange={(e) => updateField("category", e.target.value)}
           placeholder="Category (optional)"
         />
+        </div>
 
-        <div className="noteEditor__file">
-          <label htmlFor="noteFile">Upload PDF or Word file</label>
+        <div className="noteEditor__right">
+          {/*<label className="fileLabel" htmlFor="noteFile">
+            Upload File
+          </label> */}
+        {/*<div className="noteEditor__file">
+          <label htmlFor="noteFile">Upload PDF or Word file</label>*/}
+
+          <label htmlFor="noteFile" className="uploadBtn">
+            Choose File
+          </label>
+
+          {fileError && <p className="fileError">{fileError}</p>}
+
           <input
             id="noteFile"
             type="file"
-            accept=".pdf,.doc,.docx"
+            accept=".pdf,.doc,.docx, .jpg, .jpeg, .png"
             onChange={(e) => {
               const nextFile = e.target.files?.[0] ?? null;
+              
+              //setSelectedFile(nextFile);
+              if (nextFile && nextFile.size > MAX_FILE_SIZE) {
+                setFileError("This file is too large. Maximum size is 10MB.");
+                //e.target.value = ""; // reset input
+                //return;
+              
+              setSelectedFile(null);
+              setLastUploadedFileName("");
+              setRemoveAttachment(false);
+              
+                e.target.value = "";
+                return;
+              }
+
+              setFileError("");
               setSelectedFile(nextFile);
+
               if (nextFile) {
                 setLastUploadedFileName("");
                 setRemoveAttachment(false);
@@ -243,20 +283,20 @@ export default function NoteEditor() {
           />
 
           {currentAttachment && !removeAttachment && !selectedFile && (
-            <p>
+            <p className="fileInfo">
               Current attachment:{" "}
-              <a href={`/api/notes/${currentNoteId}/download`} target="_blank" rel="noreferrer">
+              <a href={`http://localhost:8080/api/notes/${currentNoteId}/download`} target="_blank" rel="noreferrer">
                 {currentAttachment.fileName}
               </a>
             </p>
           )}
 
-          {selectedFile && <p>Selected file: {selectedFile.name}</p>}
+          {selectedFile && <p className="fileInfo">Selected file: {selectedFile.name}</p>}
 
-          {!selectedFile && lastUploadedFileName && <p>Attached file: {lastUploadedFileName}</p>}
+          {/*{!selectedFile && lastUploadedFileName && <p className="fileInfo">Attached file: {lastUploadedFileName}</p>} */}
 
           {(currentAttachment || selectedFile) && (
-            <label>
+            <label className="removeFile">
               <input
                 type="checkbox"
             checked={removeAttachment}
@@ -271,18 +311,90 @@ export default function NoteEditor() {
               setSaved(false);
             }}
               />
-              Remove current attachment
+              Remove attachment
             </label>
           )}
         </div>
+        </div>
 
         <textarea
-          className="noteEditor__content"
+          className="noteEditor__content modern-textarea"
           value={note.content}
           onChange={(e) => updateField("content", e.target.value)}
           placeholder="Start typing your notes..."
         />
+
+        {/* FILE PREVIEW */}
+        <div className="noteEditor__preview">
+          {/* IMAGE PREVIEW */}
+            {currentAttachment &&
+              currentAttachment.fileContentType?.startsWith("image/") &&
+              !removeAttachment &&
+              !selectedFile && (
+                <img
+                  src={`http://localhost:8080/api/notes/${currentNoteId}/preview`}
+                  alt="Attachment preview"
+                  className="preview-image"
+                />
+              )}
+
+          {/* PDF PREVIEW */}
+            {currentAttachment &&
+              currentAttachment.fileContentType === "application/pdf" &&
+              !removeAttachment &&
+              !selectedFile && (
+                <iframe
+                  src={`http://localhost:8080/api/notes/${currentNoteId}/preview`}
+                  className="preview-pdf"
+                  title="PDF Preview"
+                />
+              )}
+
+          {/* WORD FILE PREVIEW */}
+            {currentAttachment &&
+              currentAttachment.fileContentType?.includes("word") &&
+              !removeAttachment &&
+              !selectedFile && (
+                <div className="preview-doc">
+                  <span>📄 {currentAttachment.fileName}</span>
+                  <a
+                    href={`http://localhost:8080/api/notes/${currentNoteId}/download`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                  Download
+                  </a>
+                </div>
+              )}
+
+          {/* PREVIEW FOR NEWLY SELECTED FILE */}
+            {selectedFile && selectedFile.type.startsWith("image/") && (
+              <img
+                src={URL.createObjectURL(selectedFile)}
+                alt="Selected preview"
+                className="preview-image"
+              />
+            )}
+
+            {selectedFile && selectedFile.type === "application/pdf" && (
+              <iframe
+                src={URL.createObjectURL(selectedFile)}
+                className="preview-pdf"
+                title="PDF Preview"
+              />
+            )}
+
+            {selectedFile &&
+              selectedFile.type.includes("word") && (
+              <div className="preview-doc">
+                <span>📄 {selectedFile.name}</span>
+                <p>Word files cannot be previewed. You can still upload it.</p>
+              </div>
+              )}
+        </div>
+      
       </div>
     </div>
+  </>
   );
 }

@@ -35,6 +35,9 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private Role role;
 
+    @Column (nullable = true)
+    private String profileImage;
+
     public Long getId() {
         return id;
     }
@@ -74,6 +77,14 @@ public class User implements UserDetails {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public String getProfileImage(){
+        return profileImage;
+    }
+
+    public void setProfileImage(String profileImage){
+        this.profileImage = profileImage;
     }
 
     @Override

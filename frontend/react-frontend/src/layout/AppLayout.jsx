@@ -1,14 +1,17 @@
 import { Outlet, Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useContext } from "react";
 import useTheme from "../assets/js/useTheme";
 import { logout } from "../assets/js/utils/logout";
 import { Helmet } from "react-helmet-async";
 import { restoreUserSession } from "../assets/js/utils/adminSession";
+import axios from "axios";
+import {ProfileContext} from "../context/profile-context";
 
 import logoLight from "../assets/images/logo_spartan_scholars.png";
 import logoLightText from "../assets/images/text_logo.png";
 import logoDark from "../assets/images/dark_mode_logo.png";
 import logoDarkText from "../assets/images/dark_mode_text.png";
+import ai_icon from "../assets/images/ai_icon.png";
 
 export default function AppLayout() {
   const location = useLocation();
@@ -74,6 +77,24 @@ export default function AppLayout() {
     };
   }, []);
 
+  const token = localStorage.getItem("token");
+    if (token) {
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    }
+
+  const { profile } = useContext(ProfileContext);
+
+  //if (!profile){
+    //return <div />;
+  //}
+
+  const avatarUrl = profile?.profileImage
+  ? `http://localhost:8080${profile.profileImage}`
+  : `https://ui-avatars.com/api/?name=${encodeURIComponent(
+    profile?.name || "User"
+  )}&background=random&size=128`;
+  
+
   return (
     <>
       <Helmet>
@@ -109,7 +130,11 @@ export default function AppLayout() {
           <div ref={settingsMenuContainerRef}>
           <details className="settingsMenu" ref={settingsMenuRef}>
             <summary className="settingsMenu__trigger" aria-label="Open settings menu">
-              <span className="settingsMenu__gear">⚙</span>
+                <img
+                  src={avatarUrl}
+                  alt="Profile"
+                  className="settingsMenu__avatar" />
+                <span className="settingsMenu__name">{profile?.name || "Profile"}</span>
             </summary>
 
             <div className="settingsMenu__panel">
@@ -151,7 +176,12 @@ export default function AppLayout() {
       <div id="appShell" className={`shell ${collapsed ? "shell--collapsed" : ""}`}>
         <aside id="appSidebar" className="sidebar">
           <Link className="askAiBtn" to="/ai-assistant">
-            <span className="askAiBtn__spark">*</span>
+            <span className="askAiBtn__spark">
+              <img 
+                src={ai_icon}
+                alt="AI Icon"
+              />
+            </span>
             Ask AI
           </Link>
 

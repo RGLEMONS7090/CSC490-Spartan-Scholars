@@ -3,6 +3,7 @@ package com.spartanscholars.backend.user;
 import com.spartanscholars.backend.user.dto.ChangePasswordRequest;
 import com.spartanscholars.backend.user.dto.ProfileResponse;
 import com.spartanscholars.backend.user.dto.UpdateProfileRequest;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -13,7 +14,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/profile")
 public class ProfileController {
@@ -53,5 +55,16 @@ public class ProfileController {
     public ResponseEntity<Void> deleteProfile(@AuthenticationPrincipal User user) {
         profileService.deleteProfile(user);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping(
+        value = "/image",
+        consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<ProfileResponse> uploadProfileImage(
+        @AuthenticationPrincipal User user,
+        @RequestParam("file") MultipartFile file
+    ) {
+        return ResponseEntity.ok(profileService.uploadProfileImage(user, file));
     }
 }

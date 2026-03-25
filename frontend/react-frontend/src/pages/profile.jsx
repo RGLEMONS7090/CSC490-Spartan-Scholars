@@ -1,11 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link, useNavigate } from "react-router-dom";
 import { changePassword, deleteProfile, fetchProfile, updateProfile } from "../assets/js/api/profileApi";
 
+import Cropper from "react-easy-crop";
+import {ProfileContext} from "../context/profile-context";
+
 export default function Profile() {
   const navigate = useNavigate();
-  const [profile, setProfile] = useState(null);
+  //const [profile, setProfile] = useState(null);
   const [displayName, setDisplayName] = useState("");
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
@@ -19,11 +22,15 @@ export default function Profile() {
   const [passwordMessage, setPasswordMessage] = useState("");
   const [error, setError] = useState("");
 
+  const { setProfile } = useContext(ProfileContext);
+  const [localProfile, setLocalProfile] = useState(null);
+
   useEffect(() => {
     async function loadProfile() {
       try {
         const data = await fetchProfile();
         setProfile(data);
+        setLocalProfile(data);
         setDisplayName(data.name || "");
         setError("");
       } catch (err) {
@@ -44,6 +51,7 @@ export default function Profile() {
     try {
       const updated = await updateProfile(displayName);
       setProfile(updated);
+      setLocalProfile(updated);
       setDisplayName(updated.name || "");
       setNameMessage("Display name updated.");
     } catch (err) {
@@ -88,6 +96,111 @@ export default function Profile() {
     }
   }
 
+   // For profile image
+   const avatarUrl = localProfile?.profileImage
+   ? `http://localhost:8080${localProfile.profileImage}`
+   : `https://ui-avatars.com/api/?name=${encodeURIComponent(
+       localProfile?.name || "User")}&background=random&size=128}`;
+ 
+   
+   function handleProfileImageUpload(event) {
+     const file = event.target.files[0];
+     if (!file) return;
+   
+     setSelectedImage(URL.createObjectURL(file));
+     setCropModalOpen(true);
+   }
+ 
+   const handleUpload = async () => {
+     const token = localStorage.getItem("token");
+     const formData = new FormData();
+     formData.append("file", selectedFile);
+   
+     const res = await axios.post(
+       "http://localhost:8080/api/profile/image",
+       formData,
+       {
+         headers: {
+           Authorization: `Bearer ${token}`,
+           "Content-Type": "multipart/form-data"
+         }
+       }
+     );
+     setProfile(res.data);
+     setLocalProfile(res.data);
+    };
+
+    // For popup to crop image
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  
+  async function getCroppedImage(imageSrc, cropPixels) {
+    const image = await createImage(imageSrc);
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+  
+    canvas.width = cropPixels.width;
+    canvas.height = cropPixels.height;
+  
+    ctx.drawImage(
+      image,
+      cropPixels.x,
+      cropPixels.y,
+      cropPixels.width,
+      cropPixels.height,
+      0,
+      0,
+      cropPixels.width,
+      cropPixels.height
+    );
+  
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        resolve(blob);
+      }, "image/jpeg");
+    });
+  }
+  
+  function createImage(url) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = url;
+      img.onload = () => resolve(img);
+    });
+  }
+
+  async function saveCroppedImage() {
+    const croppedBlob = await getCroppedImage(selectedImage, croppedAreaPixels);
+  
+    const formData = new FormData();
+    formData.append("file", croppedBlob, "profile.jpg");
+  
+    try {
+      const token = localStorage.getItem("token");
+  
+      const res = await fetch("/api/profile/image", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+  
+      const updated = await res.json();
+      setProfile(updated);
+      setLocalProfile(updated);
+  
+      localStorage.setItem("user", JSON.stringify(updated));
+  
+      setCropModalOpen(false);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   return (
     <>
       <Helmet>
@@ -100,7 +213,7 @@ export default function Profile() {
             <div className="profileHeader__icon">P</div>
             <div>
               <h1>Profile Settings</h1>
-              <p>Update your display name, change your password, or delete your profile.</p>
+              <p>Update your display name, change profile image, change your password, or delete your profile.</p>
             </div>
           </div>
         </section>
@@ -111,7 +224,35 @@ export default function Profile() {
           <section className="profilePanel">
             <div className="profileSection">
               <span className="profileSection__label">Email</span>
-              <div className="profileSection__value">{profile?.email}</div>
+              <div className="profileSection__value">{localProfile?.email}</div>
+            </div>
+
+            <div className="profileSection">
+              <span className="profileSection__label">Change Profile Icon</span>
+              
+              <div className="profilePhotoRow">
+                <img
+                  src={avatarUrl}
+                  alt="Profile"
+                  className="profilePhotoPreview"
+                />
+
+                <button
+                  type="button"
+                  className="quizActionBtn quizActionBtn--secondary"
+                  onClick={() => document.getElementById("profileImageInput").click()}
+                >
+                Change Photo
+                </button>
+
+                <input
+                  id="profileImageInput"
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={handleProfileImageUpload}
+                />
+              </div>
             </div>
 
             <form className="profileSection" onSubmit={handleSaveDisplayName}>
@@ -181,7 +322,7 @@ export default function Profile() {
             <section className="profileSection">
               <span className="profileSection__label">Admin View</span>
               <p className="profileSection__help">
-                {profile?.adminMode
+                {localProfile?.adminMode
                   ? "Admin view is active for this session."
                   : "Enter the admin password to temporarily access the protected admin view."}
               </p>
@@ -195,6 +336,56 @@ export default function Profile() {
             {error && <p className="quizError">{error}</p>}
           </section>
         )}
+
+        {/* Modal for Image Icon */}
+        {cropModalOpen && (
+          <div className="cropperModal">
+          <div className="cropperContainer">
+            <div className="cropperArea">
+              <Cropper
+                image={selectedImage}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                cropShape="round"
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={(croppedArea, croppedPixels) => {
+                  setCroppedAreaPixels(croppedPixels);
+                }}
+              />
+            </div>
+
+            <div className="cropperControls">
+              <input
+                type="range"
+                min={1}
+                max={3}
+                step={0.1}
+                value={zoom}
+                onChange={(e) => setZoom(e.target.value)}
+              />
+
+              <div className="cropperButtons">
+                <button
+                  className="quizActionBtn quizActionBtn--secondary"
+                  onClick={() => setCropModalOpen(false)}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  className="quizActionBtn quizActionBtn--primary"
+                  onClick={saveCroppedImage}
+                >
+                  Save
+                </button>
+              </div>
+              </div>
+            </div>
+          </div>
+        )}
+
       </main>
     </>
   );
