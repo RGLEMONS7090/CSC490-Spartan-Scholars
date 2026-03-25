@@ -3,8 +3,8 @@ import {useState, useContext} from "react";
 import {Helmet} from "react-helmet-async";
 import useTheme from "../assets/js/useTheme";
 import { clearAdminSessionArtifacts } from "../assets/js/utils/adminSession";
-import axios from "axios";
 import { ProfileContext } from "../context/profile-context";
+import { fetchProfile } from "../assets/js/api/profileApi";
 
 import logoLight from "../assets/images/logo_spartan_scholars.png";
 import logoLightText from "../assets/images/text_logo.png";
@@ -40,12 +40,8 @@ export default function Login() {
       const data = await response.json();
       clearAdminSessionArtifacts();
       localStorage.setItem("token", data.token);
-      // Apply token to axios immediately
-      axios.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
-
-      // Refresh ProfileContext
-      const profileRes = await axios.get("http://localhost:8080/api/profile");
-      setProfile(profileRes.data);
+      const profile = await fetchProfile();
+      setProfile(profile);
 
       navigate("/");
     } catch (err) {

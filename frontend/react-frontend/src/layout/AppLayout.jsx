@@ -4,7 +4,6 @@ import useTheme from "../assets/js/useTheme";
 import { logout } from "../assets/js/utils/logout";
 import { Helmet } from "react-helmet-async";
 import { restoreUserSession } from "../assets/js/utils/adminSession";
-import axios from "axios";
 import {ProfileContext} from "../context/profile-context";
 
 import logoLight from "../assets/images/logo_spartan_scholars.png";
@@ -76,11 +75,6 @@ export default function AppLayout() {
       document.removeEventListener("touchstart", handlePointerDown);
     };
   }, []);
-
-  const token = localStorage.getItem("token");
-    if (token) {
-      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    }
 
   const { profile } = useContext(ProfileContext);
 

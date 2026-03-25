@@ -111,25 +111,6 @@ export default function Profile() {
      setCropModalOpen(true);
    }
  
-   const handleUpload = async () => {
-     const token = localStorage.getItem("token");
-     const formData = new FormData();
-     formData.append("file", selectedFile);
-   
-     const res = await axios.post(
-       "http://localhost:8080/api/profile/image",
-       formData,
-       {
-         headers: {
-           Authorization: `Bearer ${token}`,
-           "Content-Type": "multipart/form-data"
-         }
-       }
-     );
-     setProfile(res.data);
-     setLocalProfile(res.data);
-    };
-
     // For popup to crop image
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
