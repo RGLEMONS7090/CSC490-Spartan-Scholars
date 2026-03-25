@@ -4,6 +4,7 @@ import com.spartanscholars.backend.user.dto.ChangePasswordRequest;
 import com.spartanscholars.backend.user.dto.ProfileResponse;
 import com.spartanscholars.backend.user.dto.UpdateProfileRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,8 +25,11 @@ public class ProfileController {
     }
 
     @GetMapping
-    public ResponseEntity<ProfileResponse> getProfile(@AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(profileService.getProfile(user));
+    public ResponseEntity<ProfileResponse> getProfile(
+            @AuthenticationPrincipal User user,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(profileService.getProfile(user, authentication));
     }
 
     @PatchMapping

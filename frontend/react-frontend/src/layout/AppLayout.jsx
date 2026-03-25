@@ -1,35 +1,85 @@
-import { Outlet, Link, NavLink } from "react-router-dom";
-import {useState} from "react";
+import { Outlet, Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
 import useTheme from "../assets/js/useTheme";
-import {logout} from "../assets/js/utils/logout";
-import {Helmet} from "react-helmet-async";
+import { logout } from "../assets/js/utils/logout";
+import { Helmet } from "react-helmet-async";
+import { restoreUserSession } from "../assets/js/utils/adminSession";
 
-//Import images
 import logoLight from "../assets/images/logo_spartan_scholars.png";
 import logoLightText from "../assets/images/text_logo.png";
 import logoDark from "../assets/images/dark_mode_logo.png";
 import logoDarkText from "../assets/images/dark_mode_text.png";
 
 export default function AppLayout() {
-  //Using theme
-  const {theme, toggleTheme} = useTheme();
-  // Function for Sidebar
-  const [collapsed, setCollapsed] = useState(
-    localStorage.getItem("sidebarCollapsed") === "true");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const previousPathRef = useRef(location.pathname);
+  const settingsMenuContainerRef = useRef(null);
+  const settingsMenuRef = useRef(null);
+  const { theme, toggleTheme } = useTheme();
+  const [collapsed, setCollapsed] = useState(localStorage.getItem("sidebarCollapsed") === "true");
+
+  function closeSettingsMenu() {
+    if (settingsMenuRef.current) {
+      settingsMenuRef.current.open = false;
+    }
+  }
 
   function toggleSidebar() {
     const newValue = !collapsed;
     setCollapsed(newValue);
     localStorage.setItem("sidebarCollapsed", newValue);
-  };
+  }
+
+  function leaveAdminView() {
+    restoreUserSession();
+    closeSettingsMenu();
+    navigate("/profile");
+  }
+
+  function handleThemeToggle() {
+    toggleTheme();
+  }
+
+  function handleLogout() {
+    closeSettingsMenu();
+    logout();
+  }
+
+  const isAdminRoute = location.pathname.startsWith("/admin");
+
+  useEffect(() => {
+    const previousPath = previousPathRef.current;
+    const wasAdminRoute = previousPath.startsWith("/admin");
+    if (wasAdminRoute && !isAdminRoute) {
+      restoreUserSession();
+    }
+    previousPathRef.current = location.pathname;
+    closeSettingsMenu();
+  }, [isAdminRoute, location.pathname]);
+
+  useEffect(() => {
+    function handlePointerDown(event) {
+      if (!settingsMenuContainerRef.current?.contains(event.target)) {
+        closeSettingsMenu();
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+    };
+  }, []);
 
   return (
     <>
       <Helmet>
-        <title> Dashboard </title>
+        <title>Dashboard</title>
       </Helmet>
 
-    {/* Sidebar Button */}
       <header className="topbar">
         <div className="topbar__left">
           <button
@@ -44,62 +94,62 @@ export default function AppLayout() {
 
           <Link className="brand brand--link" to="/">
             <div className="brand__icon">
-              <img
-                className="brand__logo brand__logo--light"
-                src={logoLight}
-                alt="Spartan Scholars Logo"
-              />
-              <img
-                className="brand__logo brand__logo--dark"
-                src={logoDark}
-                alt="Spartan Scholars Logo"
-              />
+              <img className="brand__logo brand__logo--light" src={logoLight} alt="Spartan Scholars Logo" />
+              <img className="brand__logo brand__logo--dark" src={logoDark} alt="Spartan Scholars Logo" />
             </div>
 
             <div className="brand__name">
-              <img
-                className="brand__wordmark brand__wordmark--light"
-                src={logoLightText}
-                alt="Spartan Scholars"
-              />
-              <img
-                className="brand__wordmark brand__wordmark--dark"
-                src={logoDarkText}
-                alt="Spartan Scholars"
-              />
+              <img className="brand__wordmark brand__wordmark--light" src={logoLightText} alt="Spartan Scholars" />
+              <img className="brand__wordmark brand__wordmark--dark" src={logoDarkText} alt="Spartan Scholars" />
             </div>
           </Link>
         </div>
 
         <div className="topbar__right">
-          {/* Theme Button */}
-          <button 
-            className="iconBtn" 
-            type="button"
-            aria-label="Switch theme"
-            onClick={toggleTheme}>
-              {theme == "dark" ? "☀" : "☽" }
-          </button>
+          <div ref={settingsMenuContainerRef}>
+          <details className="settingsMenu" ref={settingsMenuRef}>
+            <summary className="settingsMenu__trigger" aria-label="Open settings menu">
+              <span className="settingsMenu__gear">⚙</span>
+            </summary>
 
-            {/*Logout Button */}
-          <button 
-            className="logoutBtn" 
-            type="button"
-            onClick={logout}>
+            <div className="settingsMenu__panel">
+              <Link className="settingsMenu__item" to="/profile" onClick={closeSettingsMenu}>
+                Profile
+              </Link>
+
+              {isAdminRoute && (
+                <button className="settingsMenu__item" type="button" onClick={leaveAdminView}>
+                  Leave Admin View
+                </button>
+              )}
+
+              <button className="settingsMenu__item settingsMenu__item--danger" type="button" onClick={handleLogout}>
                 Logout
-          </button>
+              </button>
 
-          <Link className="profileBtn" to="/profile">
-            <span className="profileBtn__icon">P</span>
-            <span className="profileBtn__text">Profile</span>
-          </Link>
+              <button
+                className="settingsMenu__themeToggle"
+                type="button"
+                onClick={handleThemeToggle}
+                aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              >
+                <span className="settingsMenu__themeIcon" aria-hidden="true">☀</span>
+                <span
+                  className={`settingsMenu__switch ${theme === "dark" ? "settingsMenu__switch--active" : ""}`}
+                  aria-hidden="true"
+                >
+                  <span className="settingsMenu__switchThumb"></span>
+                </span>
+                <span className="settingsMenu__themeIcon" aria-hidden="true">☾</span>
+              </button>
+            </div>
+          </details>
+          </div>
         </div>
       </header>
 
-      {/* Sidebar and Main Layout */}
       <div id="appShell" className={`shell ${collapsed ? "shell--collapsed" : ""}`}>
         <aside id="appSidebar" className="sidebar">
-
           <Link className="askAiBtn" to="/ai-assistant">
             <span className="askAiBtn__spark">*</span>
             Ask AI
@@ -131,14 +181,13 @@ export default function AppLayout() {
             <NavLink to="/analytics" className={({ isActive }) => "nav__item" + (isActive ? " nav__item--active" : "")}>
               View Analytics
             </NavLink>
-
           </nav>
         </aside>
 
         <main className="main">
-            <Outlet />
+          <Outlet />
         </main>
-    </div>
+      </div>
     </>
-);
+  );
 }

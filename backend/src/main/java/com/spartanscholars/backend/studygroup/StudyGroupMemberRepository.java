@@ -29,4 +29,6 @@ public interface StudyGroupMemberRepository extends JpaRepository<StudyGroupMemb
             where m.user.id = :userId and m.group.id in :groupIds
             """)
     List<Long> findJoinedGroupIds(@Param("userId") Long userId, @Param("groupIds") Collection<Long> groupIds);
+
+    void deleteByUserId(Long userId);
 }

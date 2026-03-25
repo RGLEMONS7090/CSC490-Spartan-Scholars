@@ -1,6 +1,4 @@
-import logo from './logo.svg';
 import './App.css';
-import {HelmetProvider} from "react-helmet-async";
 import AppLayout from "./layout/AppLayout";
 
 // importing react router
@@ -19,6 +17,10 @@ import Notes from "./pages/notes";
 import NoteDetail from "./pages/notes_pages/note-detail";
 import AiAssistant from "./pages/ai-assistant";
 import Profile from "./pages/profile";
+import AdminAccess from "./pages/admin/admin-access";
+import AdminUsers from "./pages/admin/admin-users";
+import AdminUserDetail from "./pages/admin/admin-user-detail";
+import AdminSessionBoundary from "./pages/admin/admin-session-boundary";
 import TakeQuizzes from "./pages/take-quizzes";
 import QuizCreate from "./pages/quizzes/quiz-create";
 import QuizAiGenerator from "./pages/quizzes/quiz-ai-generator";
@@ -49,6 +51,7 @@ export default function App() {
           <Route path="/note/:id" element={<NoteDetail />} />
           <Route path="/ai-assistant" element={<AiAssistant />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/admin-access" element={<AdminAccess />} />
           <Route path="/take-quizzes" element={<TakeQuizzes />} />
           <Route path="/take-quizzes/create" element={<QuizCreate />} />
           <Route path="/take-quizzes/create/ai" element={<QuizAiGenerator />} />
@@ -61,6 +64,10 @@ export default function App() {
           <Route path="/notes/new" element={<NoteEditor />} />
           <Route path="/notes/edit/:id" element={<NoteEditor />} /> 
           <Route path="/notes/:id" element={<NoteView />} />
+          <Route element={<AdminSessionBoundary />}>
+            <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/users/:id" element={<AdminUserDetail />} />
+          </Route>
         </Route>
 
         <Route path="/login" element={<Login />} />

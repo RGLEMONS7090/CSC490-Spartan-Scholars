@@ -3,6 +3,7 @@ package com.spartanscholars.backend.discussion;
 import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -21,4 +22,16 @@ public interface DiscussionCommentRepository extends JpaRepository<DiscussionCom
     long countByDiscussionId(Long discussionId);
 
     void deleteByDiscussionId(Long discussionId);
+
+    List<DiscussionComment> findByAuthorId(Long authorId);
+
+    void deleteByAuthorId(Long authorId);
+
+    @Modifying
+    @Query("""
+            update DiscussionComment c
+            set c.parent = null
+            where c.parent.id in :parentIds
+            """)
+    void clearParentsByParentIds(@Param("parentIds") Collection<Long> parentIds);
 }

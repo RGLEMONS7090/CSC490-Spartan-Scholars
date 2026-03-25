@@ -9,7 +9,11 @@ public interface StudyQuizRepository extends JpaRepository<StudyQuiz, Long> {
 
     List<StudyQuiz> findByOwnerIdOrderByUpdatedAtDesc(Long ownerId);
 
+    List<StudyQuiz> findAllByOwnerIdOrderByUpdatedAtDesc(Long ownerId);
+
     Optional<StudyQuiz> findByIdAndOwnerId(Long id, Long ownerId);
+
+    long countByOwnerId(Long ownerId);
 
     @EntityGraph(attributePaths = {"questions"})
     Optional<StudyQuiz> findWithQuestionsByIdAndOwnerId(Long id, Long ownerId);

@@ -25,4 +25,8 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
     List<NoteSummaryProjection> findSummariesByOwnerIdOrderByUpdatedAtDesc(Long ownerId);
 
     Optional<Note> findByIdAndOwnerId(Long id, Long ownerId);
+
+    long countByOwnerId(Long ownerId);
+
+    void deleteByOwnerId(Long ownerId);
 }

@@ -1,8 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
 import {useState} from "react";
-import {logout} from "../assets/js/utils/logout";
 import {Helmet} from "react-helmet-async";
 import useTheme from "../assets/js/useTheme";
+import { clearAdminSessionArtifacts } from "../assets/js/utils/adminSession";
 
 import logoLight from "../assets/images/logo_spartan_scholars.png";
 import logoLightText from "../assets/images/text_logo.png";
@@ -35,6 +35,7 @@ export default function Login() {
       }
 
       const data = await response.json();
+      clearAdminSessionArtifacts();
       localStorage.setItem("token", data.token);
 
       navigate("/");
@@ -92,7 +93,7 @@ export default function Login() {
             data-theme-toggle=""
             aria-label="Switch to dark mode"
             onClick={toggleTheme}>
-              {theme == "dark" ? "☀" : "☽" }
+              {theme === "dark" ? "☀" : "☽" }
           </button>
 
           <p className="authHero__eyebrow">Academic community platform</p>
