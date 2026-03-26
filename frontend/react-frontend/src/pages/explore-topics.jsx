@@ -16,6 +16,14 @@ function flattenCourses(groups) {
   );
 }
 
+function flattenProgramCourses(programs) {
+  return programs.flatMap((program) => [
+    ...flattenCourses(program.requirementGroups || []),
+    ...(program.concentrations || []).flatMap((item) => flattenCourses(item.requirementGroups || [])),
+    ...(program.minors || []).flatMap((item) => flattenCourses(item.requirementGroups || [])),
+  ]);
+}
+
 function dedupeCourses(courses) {
   const seen = new Set();
   return courses.filter((course) => {
@@ -129,6 +137,25 @@ function normalizeCourseCode(value) {
   return `${match[1]} ${match[2]}`;
 }
 
+function buildParsedCourseDetailMap(details) {
+  const entries = (details || [])
+    .map((item) => {
+      if (!item) {
+        return null;
+      }
+      if (typeof item === "string") {
+        return { code: normalizeCourseCode(item), title: "" };
+      }
+      return {
+        code: normalizeCourseCode(item.code),
+        title: (item.title || "").trim(),
+      };
+    })
+    .filter((item) => item?.code);
+
+  return new Map(entries.map((item) => [item.code, item]));
+}
+
 function extractCreditCount(value) {
   const match = (value || "").match(/(\d+)\s*(credits?|hours?)/i);
   return match ? Number(match[1]) : null;
@@ -218,9 +245,100 @@ function cleanAuditField(value) {
     return "";
   }
 
+  const explicitMajorSection = cleaned.match(/see\s+major\s+in\s+(.+?)\s+section/i);
+  if (explicitMajorSection?.[1]) {
+    return explicitMajorSection[1].trim();
+  }
+
   return cleaned
+    .replace(/^requirements\s+still\s+needed:\s*/i, "")
+    .replace(/^see\s+major\s+in\s+/i, "")
+    .replace(/\s+section$/i, "")
     .split(/\b(?:Program|College|Campus|Advisor|Academic Standing|UNCG Credits Earned|Transfer Credits Earned|Overall Credits Earned|Overall GPA)\b/i)[0]
     .trim();
+}
+
+function formatImportedCourseMeta(course, fallback) {
+  if (!course) {
+    return fallback;
+  }
+
+  const parts = [];
+  if (course.groupTitle) {
+    parts.push(course.groupTitle);
+  }
+  if (course.credits) {
+    parts.push(`${course.credits} credits`);
+  }
+
+  return parts.join(" • ") || fallback;
+}
+
+function formatCourseLabel(code, course) {
+  return course?.title ? `${code} - ${course.title}` : code;
+}
+
+function formatPrereqList(prereqs, courseMap) {
+  return prereqs.map((code) => formatCourseLabel(code, courseMap.get(code))).join(", ");
+}
+
+const ALL_UNCG_COURSES = dedupeCourses(flattenProgramCourses(UNCG_PROGRAMS));
+
+function formatRequirementDisplayLabel(label, fallback) {
+  const cleaned = (label || "").trim().replace(/\s+/g, " ");
+  if (!cleaned) {
+    return fallback;
+  }
+
+  const normalized = cleaned.toUpperCase();
+  const creditMatch = cleaned.match(/(\d+)\s+credits?/i);
+  const subjectRangeMatch =
+    cleaned.match(/\b([A-Z]{2,4})\s+([34])00\s*(?::|-)\s*[45]99\b/i) ||
+    cleaned.match(/\b([A-Z]{2,4})\s+([34])@\b/i) ||
+    cleaned.match(/\b([A-Z]{2,4})\s+(\d{3})(?:\s+level)?\s+(?:or|and)\s+(?:higher|above)\b/i);
+  if (subjectRangeMatch) {
+    const [, subject, level] = subjectRangeMatch;
+    const prefix = creditMatch ? `${creditMatch[1]} Credits of ` : "";
+    const hasExceptionLanguage =
+      /\b additionally\b/i.test(cleaned) ||
+      /\bsatisfied with\b/i.test(cleaned) ||
+      /\bminimum of\b/i.test(cleaned) ||
+      (normalized.includes(" OR ") && /\b(MAT|STA|PHY|BIO|CHE|ECO|ACC|FIN)\b/.test(normalized));
+    return `${prefix}${subject.toUpperCase()} Electives at ${level}00 Level or above${
+      hasExceptionLanguage ? ", with approved exceptions" : ""
+    }`;
+  }
+
+  const levelMatch = cleaned.match(/^([A-Z]{2,4})\s+(\d{3})(?:\s+level)?\s+(?:or|and)\s+(?:higher|above)$/i);
+  if (levelMatch) {
+    const [, subject, level] = levelMatch;
+    return `${subject.toUpperCase()} Elective at ${level} Level or above`;
+  }
+
+  return cleaned;
+}
+
+function formatRequirementHeading(requirement) {
+  return formatRequirementDisplayLabel(
+    requirement?.label,
+    describeRequirementType(requirement?.kind, requirement?.countNeeded)
+  );
+}
+
+function buildDetectedProgramName(parsedAudit) {
+  const degree = cleanAuditField(parsedAudit?.degreeName);
+  const major = cleanAuditField(parsedAudit?.major);
+
+  if (degree && major) {
+    const normalizedDegree = normalizeText(degree);
+    const normalizedMajor = normalizeText(major);
+    if (normalizedDegree.includes(normalizedMajor)) {
+      return degree;
+    }
+    return `${degree} in ${major}`;
+  }
+
+  return degree || major || "UNCG degree";
 }
 
 function buildInitialState(storedState) {
@@ -266,7 +384,11 @@ export default function ExploreTopics() {
   const [uploadError, setUploadError] = useState("");
   const [selectedFileName, setSelectedFileName] = useState("");
   const selectorScrollRef = useRef(null);
+  const importedTakenCardRef = useRef(null);
+  const importedCompletedListRef = useRef(null);
+  const importedRemainingCardRef = useRef(null);
   const pendingSelectorScrollTopRef = useRef(null);
+  const [importedCompletedListMaxHeight, setImportedCompletedListMaxHeight] = useState(null);
 
   const program = useMemo(() => getProgramById(programId), [programId]);
 
@@ -297,6 +419,8 @@ export default function ExploreTopics() {
   );
 
   const requiredCourses = useMemo(() => dedupeCourses(flattenCourses(requirementGroups)), [requirementGroups]);
+  const requiredCourseMap = useMemo(() => new Map(requiredCourses.map((course) => [course.code, course])), [requiredCourses]);
+  const uncgCourseMap = useMemo(() => new Map(ALL_UNCG_COURSES.map((course) => [course.code, course])), []);
   const validCourseCodes = useMemo(() => new Set(requiredCourses.map((course) => course.code)), [requiredCourses]);
 
   useEffect(() => {
@@ -320,6 +444,18 @@ export default function ExploreTopics() {
   }, [parsedAudit, uploadSkipped, programId, catalogYear, concentrationId, minorId, creditsPerTerm, completedCourses]);
 
   const completedSet = useMemo(() => new Set(completedCourses), [completedCourses]);
+  const parsedCompletedCourseMap = useMemo(
+    () => buildParsedCourseDetailMap(parsedAudit?.completedCourseDetails),
+    [parsedAudit]
+  );
+  const parsedInProgressCourseMap = useMemo(
+    () => buildParsedCourseDetailMap(parsedAudit?.inProgressCourseDetails),
+    [parsedAudit]
+  );
+  const parsedRemainingCourseMap = useMemo(
+    () => buildParsedCourseDetailMap(parsedAudit?.remainingCourseDetails),
+    [parsedAudit]
+  );
   const importedCompletedCourses = useMemo(
     () => Array.from(new Set((parsedAudit?.completedCourses || []).map(normalizeCourseCode).filter(Boolean))),
     [parsedAudit]
@@ -367,13 +503,32 @@ export default function ExploreTopics() {
         .filter((group) => group.options.length > 0),
     [parsedAudit]
   );
+  const importedCompletedCourseDetails = useMemo(
+    () =>
+      importedCompletedCourses.map((code) => ({
+        code,
+        course: requiredCourseMap.get(code) || uncgCourseMap.get(code) || null,
+        parsedTitle: parsedCompletedCourseMap.get(code)?.title || "",
+      })),
+    [importedCompletedCourses, requiredCourseMap, uncgCourseMap, parsedCompletedCourseMap]
+  );
+  const importedInProgressCourseDetails = useMemo(
+    () =>
+      importedInProgressCourses.map((code) => ({
+        code,
+        course: requiredCourseMap.get(code) || uncgCourseMap.get(code) || null,
+        parsedTitle: parsedInProgressCourseMap.get(code)?.title || "",
+      })),
+    [importedInProgressCourses, requiredCourseMap, uncgCourseMap, parsedInProgressCourseMap]
+  );
   const importedRemainingCourseDetails = useMemo(
     () =>
       importedRemainingCourses.map((code) => ({
         code,
-        course: requiredCourses.find((item) => item.code === code) || null,
+        course: requiredCourseMap.get(code) || uncgCourseMap.get(code) || null,
+        parsedTitle: parsedRemainingCourseMap.get(code)?.title || "",
       })),
-    [importedRemainingCourses, requiredCourses]
+    [importedRemainingCourses, requiredCourseMap, uncgCourseMap, parsedRemainingCourseMap]
   );
   const importedRequirementBlocks = useMemo(
     () => {
@@ -401,13 +556,16 @@ export default function ExploreTopics() {
         label: course?.title || "Exact course remaining",
       }));
     const remainingChoices = importedRequirementBlocks.map((requirement) => ({
-      code: describeRequirementType(requirement.kind, requirement.countNeeded),
-      label: requirement.label,
+      code: formatRequirementHeading(requirement),
+      label: requirement.credits
+        ? `${requirement.credits} still needed in this area.`
+        : "Remaining requirement from Degree Works",
     }));
     return [...remainingClasses, ...remainingChoices].slice(0, 12);
   }, [importedRemainingCourseDetails, importedRequirementBlocks]);
-  const detectedDegreeName = cleanAuditField(parsedAudit?.degreeName) || "UNCG degree";
+  const detectedDegreeName = buildDetectedProgramName(parsedAudit);
   const detectedConcentration = cleanAuditField(parsedAudit?.concentration);
+  const detectedMinor = cleanAuditField(parsedAudit?.minor);
 
   const completedCount = requiredCourses.filter((course) => completedSet.has(course.code)).length;
   const remainingCourses = requiredCourses.filter((course) => !completedSet.has(course.code));
@@ -554,6 +712,38 @@ export default function ExploreTopics() {
   const needsUpload = !parsedAudit && !uploadSkipped;
   const importedAuditMode = Boolean(parsedAudit);
 
+  useLayoutEffect(() => {
+    if (!importedAuditMode) {
+      setImportedCompletedListMaxHeight(null);
+      return undefined;
+    }
+
+    const syncImportedCompletedHeight = () => {
+      const takenCard = importedTakenCardRef.current;
+      const completedList = importedCompletedListRef.current;
+      const remainingCard = importedRemainingCardRef.current;
+
+      if (!takenCard || !completedList || !remainingCard) {
+        return;
+      }
+
+      const takenRect = takenCard.getBoundingClientRect();
+      const listRect = completedList.getBoundingClientRect();
+      const availableHeight = remainingCard.clientHeight - (listRect.top - takenRect.top);
+      const takenStyles = window.getComputedStyle(takenCard);
+      const bottomPadding = Number.parseFloat(takenStyles.paddingBottom || "0");
+      const nextHeight = Math.max(240, Math.floor(availableHeight - bottomPadding));
+      setImportedCompletedListMaxHeight(nextHeight);
+    };
+
+    syncImportedCompletedHeight();
+    window.addEventListener("resize", syncImportedCompletedHeight);
+
+    return () => {
+      window.removeEventListener("resize", syncImportedCompletedHeight);
+    };
+  }, [importedAuditMode, importedCompletedCourseDetails.length, importedInProgressCourseDetails.length, importedRequirementBlocks.length]);
+
   if (needsUpload) {
     return (
       <>
@@ -658,7 +848,7 @@ export default function ExploreTopics() {
               <strong>Imported from Degree Works PDF</strong>
               <p>{parsedAudit.summary || "Audit imported from Degree Works."}</p>
               <p className="plannerAuditBanner__meta">
-                {parsedAudit.degreeName || "UNCG degree"}{parsedAudit.concentration ? ` • ${parsedAudit.concentration}` : ""}{parsedAudit.minor ? ` • Minor: ${parsedAudit.minor}` : ""}
+                {detectedDegreeName}{detectedConcentration ? ` • ${detectedConcentration}` : ""}{detectedMinor ? ` • Minor: ${detectedMinor}` : ""}
               </p>
             </div>
             <button type="button" className="plannerAction plannerAction--secondary" onClick={resetAuditImport}>
@@ -697,7 +887,7 @@ export default function ExploreTopics() {
                   <article className="plannerStat">
                     <span>Degree</span>
                     <strong>{detectedDegreeName}</strong>
-                    <p>{detectedConcentration || "No concentration detected"}</p>
+                    <p>{detectedConcentration || detectedMinor || "No concentration detected"}</p>
                   </article>
                 </div>
               </article>
@@ -727,29 +917,34 @@ export default function ExploreTopics() {
               </article>
             </section>
 
-            <section className="plannerTwoColumn">
-              <section className="plannerCard plannerCard--taken">
+            <section className="plannerTwoColumn plannerTwoColumn--audit">
+              <section ref={importedTakenCardRef} className="plannerCard plannerCard--taken">
                 <div className="plannerCard__heading">
                   <h2>Completed Courses</h2>
                   <p>Directly parsed from the uploaded Degree Works PDF.</p>
                 </div>
 
-                <div className="plannerCourseSelector">
-                  {importedCompletedCourses.map((code) => (
-                    <article key={code} className="plannerCourse plannerCourse--done">
+                <div
+                  ref={importedCompletedListRef}
+                  className="plannerCourseSelector plannerCourseSelector--imported"
+                  style={importedCompletedListMaxHeight ? { maxHeight: `${importedCompletedListMaxHeight}px` } : undefined}
+                >
+                  {importedCompletedCourseDetails.map(({ code, course, parsedTitle }) => (
+                    <article key={code} className="plannerCourse plannerCourse--done plannerCourse--single">
                       <div className="plannerCourse__body">
                         <div className="plannerCourse__top">
                           <strong>{code}</strong>
                           <span>Done</span>
                         </div>
-                        <h4>Completed course from audit</h4>
+                        <h4>{parsedTitle || course?.title || "Completed course from audit"}</h4>
+                        <p>{formatImportedCourseMeta(course, "Imported from Degree Works PDF.")}</p>
                       </div>
                     </article>
                   ))}
                 </div>
               </section>
 
-              <section className="plannerCard plannerCard--remainingCourses">
+              <section ref={importedRemainingCardRef} className="plannerCard plannerCard--remainingCourses">
                 <div className="plannerCard__heading">
                   <h2>Still Needed According To Audit</h2>
                   <p>This list is shown straight from Degree Works parsing so it should be closer to your real graduation status.</p>
@@ -763,14 +958,14 @@ export default function ExploreTopics() {
                         <span>{importedInProgressCourses.length}</span>
                       </div>
                       <div className="plannerCourseList">
-                        {importedInProgressCourses.map((code) => (
+                        {importedInProgressCourseDetails.map(({ code, course, parsedTitle }) => (
                           <article key={code} className="plannerCourse">
                             <div className="plannerCourse__body">
                               <div className="plannerCourse__top">
                                 <strong>{code}</strong>
                               </div>
-                              <h4>{requiredCourses.find((item) => item.code === code)?.title || "Course in progress"}</h4>
-                              <p>Detected from Degree Works PDF.</p>
+                              <h4>{parsedTitle || course?.title || "Course in progress"}</h4>
+                              <p>{formatImportedCourseMeta(course, "Detected from Degree Works PDF.")}</p>
                             </div>
                             <span className="plannerCourse__status plannerCourse__status--ready">In progress</span>
                           </article>
@@ -785,14 +980,15 @@ export default function ExploreTopics() {
                       <span>{importedRemainingCourses.length + importedRequirementBlocks.length}</span>
                     </div>
                     <div className="plannerCourseList">
-                      {importedRemainingCourseDetails.map(({ code, course }) => (
+                      {importedRemainingCourseDetails.map(({ code, course, parsedTitle }) => (
                         <article key={code} className="plannerCourse">
                           <div className="plannerCourse__body">
                             <div className="plannerCourse__top">
                               <strong>{code}</strong>
+                              <span>{course?.credits ? `${course.credits} cr` : "Audit"}</span>
                             </div>
-                            <h4>{course?.title || "Exact course requirement"}</h4>
-                            <p>Exact class still needed according to Degree Works.</p>
+                            <h4>{parsedTitle || course?.title || "Exact course requirement"}</h4>
+                            <p>{formatImportedCourseMeta(course, "Exact class still needed according to Degree Works.")}</p>
                           </div>
                           <span className="plannerCourse__status plannerCourse__status--blocked">Remaining</span>
                         </article>
@@ -802,9 +998,9 @@ export default function ExploreTopics() {
                         <article key={requirement.id || requirement.label} className="plannerCourse">
                           <div className="plannerCourse__body">
                             <div className="plannerCourse__top">
-                              <strong>{describeRequirementType(requirement.kind, requirement.countNeeded)}</strong>
+                              <strong>{formatRequirementHeading(requirement)}</strong>
                             </div>
-                            <h4>{requirement.label}</h4>
+                            <h4>{describeRequirementType(requirement.kind, requirement.countNeeded)}</h4>
                             <p>
                               {requirement.credits
                                 ? `${requirement.credits} still needed in this area.`
@@ -965,7 +1161,7 @@ export default function ExploreTopics() {
                 {recommendedCourses.map((course) => (
                   <article key={course.code} className="plannerRecommendation">
                     <div>
-                      <strong>{course.code}</strong>
+                      <strong>{formatCourseLabel(course.code, course)}</strong>
                       <h3>{course.title}</h3>
                       <p>{course.groupTitle}</p>
                     </div>
@@ -981,7 +1177,7 @@ export default function ExploreTopics() {
                 <div className="plannerPills">
                   {blockedCourses.slice(0, 6).map((course) => (
                     <span key={course.code} className="plannerPill">
-                      {course.code}
+                      {formatCourseLabel(course.code, course)}
                     </span>
                   ))}
                 </div>
@@ -1040,7 +1236,7 @@ export default function ExploreTopics() {
                     .sort((a, b) => a.localeCompare(b))
                     .map((code) => (
                       <button key={code} type="button" className="plannerPill plannerPill--interactive" onClick={() => toggleCourse(code)}>
-                        {code}
+                        {formatCourseLabel(code, requiredCourseMap.get(code))}
                       </button>
                     ))}
                 </div>
@@ -1103,7 +1299,7 @@ export default function ExploreTopics() {
                             <h4>{course.title}</h4>
                             <p>
                               {course.prereqs?.length
-                                ? `Prereqs: ${course.prereqs.join(", ")}`
+                                ? `Prereqs: ${formatPrereqList(course.prereqs, requiredCourseMap)}`
                                 : "Prereqs: none listed in this planner"}
                             </p>
                           </div>

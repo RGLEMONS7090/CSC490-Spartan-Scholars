@@ -5,6 +5,7 @@ import com.spartanscholars.backend.ai.dto.AiGeneratedTestQuizPayload;
 import com.spartanscholars.backend.ai.dto.AiChatMessageRequest;
 import com.spartanscholars.backend.ai.dto.AiChatRequest;
 import com.spartanscholars.backend.ai.dto.AiChatResponse;
+import com.spartanscholars.backend.ai.dto.DegreeAuditCourseDetail;
 import com.spartanscholars.backend.ai.dto.DegreeAuditParseResponse;
 import com.spartanscholars.backend.ai.dto.DegreeAuditRequirementGroup;
 import com.spartanscholars.backend.quiz.dto.CreateFlashcardQuizRequest;
@@ -422,6 +423,26 @@ public class AiService {
                 "type", "array",
                 "items", Map.of("type", "string")
         ));
+        Map<String, Object> courseDetailSchema = new LinkedHashMap<>();
+        courseDetailSchema.put("type", "object");
+        courseDetailSchema.put("additionalProperties", false);
+        courseDetailSchema.put("properties", Map.of(
+                "code", Map.of("type", "string"),
+                "title", Map.of("type", "string")
+        ));
+        courseDetailSchema.put("required", List.of("code", "title"));
+        properties.put("completedCourseDetails", Map.of(
+                "type", "array",
+                "items", courseDetailSchema
+        ));
+        properties.put("inProgressCourseDetails", Map.of(
+                "type", "array",
+                "items", courseDetailSchema
+        ));
+        properties.put("remainingCourseDetails", Map.of(
+                "type", "array",
+                "items", courseDetailSchema
+        ));
         properties.put("remainingRequirements", Map.of(
                 "type", "array",
                 "items", Map.of("type", "string")
@@ -441,6 +462,9 @@ public class AiService {
                 "completedCourses",
                 "inProgressCourses",
                 "remainingCourses",
+                "completedCourseDetails",
+                "inProgressCourseDetails",
+                "remainingCourseDetails",
                 "remainingRequirements",
                 "remainingRequirementGroups",
                 "summary"
@@ -525,6 +549,9 @@ public class AiService {
         List<String> remainingCourses = extractExactRemainingCourses(lines, inProgressCourses, remainingRequirementGroups);
         List<String> remainingRequirements = extractRequirementSummaries(lines, remainingRequirementGroups, remainingCourses);
         List<String> completedCourses = extractCompletedCourses(lines, inProgressCourses, remainingCourses, remainingRequirementGroups);
+        List<DegreeAuditCourseDetail> completedCourseDetails = buildCourseDetails(completedCourses, lines);
+        List<DegreeAuditCourseDetail> inProgressCourseDetails = buildCourseDetails(inProgressCourses, lines);
+        List<DegreeAuditCourseDetail> remainingCourseDetails = buildCourseDetails(remainingCourses, lines);
 
         return new DegreeAuditParseResponse(
                 university,
@@ -535,6 +562,9 @@ public class AiService {
                 completedCourses,
                 inProgressCourses,
                 remainingCourses,
+                completedCourseDetails,
+                inProgressCourseDetails,
+                remainingCourseDetails,
                 remainingRequirements,
                 remainingRequirementGroups,
                 summaryMessage
@@ -566,6 +596,97 @@ public class AiService {
             lines.add(line);
         }
         return lines;
+    }
+
+    private List<DegreeAuditCourseDetail> buildCourseDetails(List<String> codes, List<String> lines) {
+        Map<String, String> titleMap = extractCourseTitleMap(lines);
+        List<DegreeAuditCourseDetail> details = new ArrayList<>();
+        for (String code : codes) {
+            details.add(new DegreeAuditCourseDetail(code, defaultString(titleMap.get(code))));
+        }
+        return details;
+    }
+
+    private Map<String, String> extractCourseTitleMap(List<String> lines) {
+        Map<String, String> titles = new LinkedHashMap<>();
+
+        for (int index = 0; index < lines.size(); index++) {
+            String line = lines.get(index);
+            List<String> codes = findCourseCodes(line);
+            if (codes.size() != 1) {
+                continue;
+            }
+
+            String code = codes.get(0);
+            String title = extractCourseTitleFromLine(line, code);
+            if ((title == null || title.isBlank()) && index + 1 < lines.size()) {
+                title = extractStandaloneCourseTitle(lines.get(index + 1));
+            }
+
+            if (title != null && !title.isBlank()) {
+                titles.putIfAbsent(code, title);
+            }
+        }
+
+        return titles;
+    }
+
+    private String extractCourseTitleFromLine(String line, String code) {
+        int codeIndex = line.toUpperCase(Locale.ROOT).indexOf(code.toUpperCase(Locale.ROOT));
+        if (codeIndex < 0) {
+            return null;
+        }
+
+        String trailing = line.substring(codeIndex + code.length()).trim();
+        if (trailing.isBlank()) {
+            return null;
+        }
+
+        String cleaned = trailing
+                .replaceFirst("(?i)^[-:;,]+\\s*", "")
+                .replaceFirst("(?i)\\s+[A-DFTP][+-]?\\s+\\d+\\s+(Fall|Spring|Summer|Winter)\\b.*$", "")
+                .replaceFirst("(?i)\\s+(Fall|Spring|Summer|Winter)\\s+\\d{4}.*$", "")
+                .replaceFirst("(?i)\\s+\\d+\\s*(credits?|hours?)\\b.*$", "")
+                .replaceFirst("(?i)\\s+satisfied by:.*$", "")
+                .replaceFirst("(?i)\\s+in progress.*$", "")
+                .trim();
+
+        return normalizeExtractedCourseTitle(cleaned);
+    }
+
+    private String extractStandaloneCourseTitle(String line) {
+        if (line == null || !findCourseCodes(line).isEmpty() || shouldIgnoreAuditLine(line) || looksLikeRequirementHeading(line)) {
+            return null;
+        }
+        return normalizeExtractedCourseTitle(line);
+    }
+
+    private String normalizeExtractedCourseTitle(String value) {
+        String cleaned = sanitize(value);
+        if (cleaned == null) {
+            return null;
+        }
+
+        cleaned = cleaned
+                .replaceAll("\\s+", " ")
+                .replaceFirst("(?i)^still needed:\\s*", "")
+                .replaceFirst("(?i)^satisfied by:\\s*", "")
+                .replaceFirst("\\s*[-–—]?\\s*\\(\\d+(?:\\.\\d+)?\\)\\s*$", "")
+                .trim();
+
+        String lower = cleaned.toLowerCase(Locale.ROOT);
+        if (cleaned.length() < 4
+                || lower.startsWith("see ")
+                || lower.startsWith("major in ")
+                || lower.startsWith("choose from")
+                || lower.startsWith("select ")
+                || lower.startsWith("legend")
+                || lower.startsWith("notes")
+                || lower.contains("credits applied")) {
+            return null;
+        }
+
+        return cleaned;
     }
 
     private List<String> extractInProgressCourses(List<String> lines) {
@@ -609,7 +730,7 @@ public class AiService {
                 List<String> options = collectRequirementOptions(lines, index + 1);
                 if (!options.isEmpty()) {
                     groups.add(new DegreeAuditRequirementGroup(
-                            buildGroupLabel(currentHeading, countNeeded),
+                            extractSpecificRequirementLabel(currentHeading, line, countNeeded),
                             inferRequirementType(currentHeading),
                             countNeeded,
                             extractCreditsText(line),
@@ -621,7 +742,7 @@ public class AiService {
 
             if (lowerLine.contains(" or ")) {
                 groups.add(new DegreeAuditRequirementGroup(
-                        buildGroupLabel(currentHeading.isBlank() ? line : currentHeading, 1),
+                        extractSpecificRequirementLabel(currentHeading, line, 1),
                         inferRequirementType(currentHeading.isBlank() ? line : currentHeading),
                         1,
                         extractCreditsText(line),
@@ -802,6 +923,34 @@ public class AiService {
             return Integer.parseInt(matcher.group(1));
         }
         return fallback;
+    }
+
+    private String extractSpecificRequirementLabel(String heading, String stillNeededLine, int countNeeded) {
+        String cleanedLine = stillNeededLine
+                .replaceFirst("(?i)^still needed:\\s*", "")
+                .replaceFirst("(?i)choose from\\s+.+$", "")
+                .replaceFirst("(?i)select\\s+.+$", "")
+                .trim()
+                .replaceAll("\\s+", " ");
+
+        if (!cleanedLine.isBlank()) {
+            String normalized = cleanedLine.toLowerCase(Locale.ROOT);
+            boolean looksSpecific =
+                    normalized.contains("higher")
+                            || Pattern.compile("\\b[A-Z]{2,4}\\s?\\d{3}[A-Z]?\\b").matcher(cleanedLine).find()
+                            || normalized.contains("credits in")
+                            || normalized.contains("hours in");
+            if (looksSpecific) {
+                return cleanedLine;
+            }
+        }
+
+        String cleanedHeading = sanitize(heading);
+        if (cleanedHeading != null && !cleanedHeading.isBlank()) {
+            return cleanedHeading;
+        }
+
+        return buildGroupLabel(cleanedHeading == null ? "" : cleanedHeading, countNeeded);
     }
 
     private String buildGroupLabel(String heading, int countNeeded) {
