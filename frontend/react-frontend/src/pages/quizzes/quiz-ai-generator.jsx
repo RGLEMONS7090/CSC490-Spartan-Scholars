@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { createAiFlashcardQuiz, createAiTestQuiz } from "../../assets/js/api/quizApi";
 
 export default function QuizAiGenerator() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [activityType, setActivityType] = useState("test");
   const [form, setForm] = useState({
     mainTopic: "",
@@ -14,6 +15,20 @@ export default function QuizAiGenerator() {
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const noteState = location.state;
+    if (!noteState?.sourceNoteContent) {
+      return;
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      mainTopic: noteState.sourceNoteTitle || prev.mainTopic,
+      classLevel: "",
+      topicsToCover: [noteState.sourceNoteCategory, noteState.sourceNoteContent].filter(Boolean).join("\n\n") || prev.topicsToCover,
+    }));
+  }, [location.state]);
 
   function updateField(field, value) {
     setForm((prev) => ({
@@ -76,6 +91,12 @@ export default function QuizAiGenerator() {
         </section>
 
         <section className="quizEditorPanel">
+          {location.state?.sourceNoteTitle && (
+            <p className="quizNotice">
+              Using note: <strong>{location.state.sourceNoteTitle}</strong>
+            </p>
+          )}
+
           <div className="quizTypeToggle">
             <button
               type="button"

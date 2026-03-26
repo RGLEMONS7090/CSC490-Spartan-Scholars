@@ -39,7 +39,7 @@ public class NoteService {
     }
 
     private NoteSummaryResponse toSummaryResponse(NoteSummaryProjection note) {
-        String preview = buildPreview(note.getContent());
+        String preview = buildPreview(note.getPreview());
         return new NoteSummaryResponse(
                 note.getId(),
                 note.getTitle(),

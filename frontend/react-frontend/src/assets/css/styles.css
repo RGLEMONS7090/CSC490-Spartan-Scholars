@@ -1858,17 +1858,19 @@ body{
 
 .noteCard{
   position: relative;
-  min-height: 350px;
-  padding: 34px 36px 28px;
+  min-height: 220px;
+  padding: 28px 32px 24px;
   border: 2px solid var(--borderSoft);
   border-radius: 24px;
   background: var(--surface);
+  display: flex;
+  flex-direction: column;
 }
 
 .noteCard__actions{
   position: absolute;
-  top: 34px;
-  right: 32px;
+  top: 28px;
+  right: 28px;
   display: flex;
   gap: 12px;
 }
@@ -1892,13 +1894,13 @@ body{
 }
 
 .noteCard h2{
-  margin: 0 0 36px;
+  margin: 0 0 20px;
   max-width: 82%;
   font-size: 28px;
 }
 
 .noteCard__text{
-  margin: 0 0 36px;
+  margin: 0 0 20px;
   color: var(--muted);
   font-size: 16px;
   line-height: 1.55;
@@ -3618,7 +3620,8 @@ body{
 
 .noteDetails__back,
 .noteDetails__editBtn,
-.noteDetails__enhanceBtn {
+.noteDetails__enhanceBtn,
+.noteDetails__quizBtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3637,7 +3640,8 @@ body{
 
 .noteDetails__back:hover,
 .noteDetails__editBtn:hover,
-.noteDetails__enhanceBtn:hover {
+.noteDetails__enhanceBtn:hover,
+.noteDetails__quizBtn:hover {
   transform: translateY(-1px);
   box-shadow: 0 10px 24px rgba(27, 43, 68, 0.12);
   background: #f8fbff;
@@ -3677,11 +3681,19 @@ body{
   border-color: #1d4fae;
 }
 
+.noteDetails__quizBtn {
+  cursor: pointer;
+  color: #1d4fae;
+  background: rgba(29, 79, 174, 0.08);
+  border-color: rgba(29, 79, 174, 0.22);
+}
+
 .noteDetails__enhanceBtn:hover {
   background: #173f8b;
 }
 
-.noteDetails__enhanceBtn:disabled {
+.noteDetails__enhanceBtn:disabled,
+.noteDetails__quizBtn:disabled {
   cursor: not-allowed;
   opacity: 0.65;
   transform: none;
@@ -3710,7 +3722,8 @@ body{
 
 :root[data-theme="dark"] .noteDetails__back,
 :root[data-theme="dark"] .noteDetails__editBtn,
-:root[data-theme="dark"] .noteDetails__enhanceBtn {
+:root[data-theme="dark"] .noteDetails__enhanceBtn,
+:root[data-theme="dark"] .noteDetails__quizBtn {
   border-color: #465064;
   box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28);
 }
@@ -3722,6 +3735,11 @@ body{
 
 :root[data-theme="dark"] .noteDetails__back:hover {
   background: #384154;
+}
+
+:root[data-theme="dark"] .noteDetails__quizBtn {
+  color: #cfe0ff;
+  background: rgba(29, 79, 174, 0.2);
 }
 
 :root[data-theme="dark"] .noteDetails__editBtn {
@@ -3781,6 +3799,15 @@ body{
 .noteDetails__editBtn:hover {
   color: white;
   background: var(--btnBlueHover);
+}
+
+.quizNotice {
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(29,79,174,.08);
+  border: 1px solid rgba(29,79,174,.14);
+  color: var(--text);
 }
 
 /* Profile Image */

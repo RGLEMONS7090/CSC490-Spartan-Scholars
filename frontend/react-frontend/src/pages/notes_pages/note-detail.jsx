@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { apiFetch, enhanceNoteWithAi } from "../../assets/js/api/notesApi";
 
 export default function NoteDetails() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [note, setNote] = useState(null);
   const [enhancing, setEnhancing] = useState(false);
   const [error, setError] = useState("");
@@ -40,6 +41,21 @@ export default function NoteDetails() {
     }
   }
 
+  function handleMakeQuiz() {
+    if (!note?.content?.trim()) {
+      return;
+    }
+
+    navigate("/take-quizzes/create/ai", {
+      state: {
+        sourceNoteId: note.id,
+        sourceNoteTitle: note.title || "",
+        sourceNoteCategory: note.category || "",
+        sourceNoteContent: note.content || "",
+      },
+    });
+  }
+
   if (!note) {
     return <p>{error || "Loading..."}</p>;
   }
@@ -51,6 +67,13 @@ export default function NoteDetails() {
           Back to Notes
         </Link>
         <div className="noteDetails__actions">
+          <button
+            className="noteDetails__quizBtn"
+            disabled={!note.content?.trim()}
+            onClick={handleMakeQuiz}
+          >
+            Make Quiz Using Note
+          </button>
           <button
             className="noteDetails__enhanceBtn"
             disabled={enhancing || !note.content?.trim()}

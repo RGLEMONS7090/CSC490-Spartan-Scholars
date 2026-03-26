@@ -8,7 +8,6 @@ export default function NoteCard({ note, onEdit, onDelete }) {
 
   <div className="noteCard__header">
     <div>
-      <p className="noteCard__category">{note.category || "General"}</p>
       <h2 className="noteCard__title">{note.title}</h2>
     </div>
 
@@ -24,7 +23,7 @@ export default function NoteCard({ note, onEdit, onDelete }) {
   </div>
 
   <p className="noteCard__text">
-    {note.preview || "No typed content yet."}
+    {note.category || "No description added."}
   </p>
 
   <div className="noteCard__footer">

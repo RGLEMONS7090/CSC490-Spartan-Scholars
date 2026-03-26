@@ -10,7 +10,7 @@ public interface NoteSummaryProjection {
 
     String getCategory();
 
-    String getContent();
+    String getPreview();
 
     String getFileName();
 
