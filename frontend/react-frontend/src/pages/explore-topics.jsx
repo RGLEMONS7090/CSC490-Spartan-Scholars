@@ -129,6 +129,100 @@ function normalizeCourseCode(value) {
   return `${match[1]} ${match[2]}`;
 }
 
+function extractCreditCount(value) {
+  const match = (value || "").match(/(\d+)\s*(credits?|hours?)/i);
+  return match ? Number(match[1]) : null;
+}
+
+function inferRequirementKind(value) {
+  const normalized = normalizeText(value);
+  if (normalized.includes("elective")) {
+    return "elective";
+  }
+  if (
+    normalized.includes("science") ||
+    normalized.includes("natural science") ||
+    normalized.includes("biology") ||
+    normalized.includes("chemistry") ||
+    normalized.includes("physics")
+  ) {
+    return "science";
+  }
+  if (normalized.includes("humanities")) {
+    return "humanities";
+  }
+  if (normalized.includes("social")) {
+    return "social";
+  }
+  return "requirement";
+}
+
+function buildRequirementOptions(requirement, requiredCourses, remainingCodes) {
+  const normalizedRequirement = normalizeText(requirement);
+  const kind = inferRequirementKind(requirement);
+  const remainingSet = new Set(remainingCodes);
+  const sciencePrefixes = new Set(["BIO", "CHE", "PHY", "AST", "GEO", "GLY", "SCI", "ENV"]);
+
+  let options = requiredCourses.filter((course) => {
+    if (!remainingSet.has(course.code)) {
+      return false;
+    }
+
+    const combinedText = normalizeText(`${course.code} ${course.title} ${course.groupTitle}`);
+    if (kind === "science") {
+      const prefix = course.code.split(" ")[0];
+      return (
+        sciencePrefixes.has(prefix) ||
+        combinedText.includes("science") ||
+        combinedText.includes("biology") ||
+        combinedText.includes("chemistry") ||
+        combinedText.includes("physics")
+      );
+    }
+
+    if (kind === "elective") {
+      return combinedText.includes("elective") || combinedText.includes("special topics");
+    }
+
+    const tokens = normalizedRequirement.split(" ").filter((token) => token.length > 3);
+    return tokens.some((token) => combinedText.includes(token));
+  });
+
+  if (options.length === 0 && kind === "elective") {
+    options = requiredCourses.filter((course) => remainingSet.has(course.code)).slice(0, 8);
+  }
+
+  return dedupeCourses(options).slice(0, 10);
+}
+
+function describeRequirementType(type, countNeeded) {
+  const amount = countNeeded || 1;
+  if (type === "science") {
+    return `${amount} Science class`;
+  }
+  if (type === "elective") {
+    return `${amount} Elective`;
+  }
+  if (type === "humanities") {
+    return `${amount} Humanities course`;
+  }
+  if (type === "social-science") {
+    return `${amount} Social Science course`;
+  }
+  return `${amount} Requirement option`;
+}
+
+function cleanAuditField(value) {
+  const cleaned = (value || "").replace(/\s+/g, " ").trim();
+  if (!cleaned) {
+    return "";
+  }
+
+  return cleaned
+    .split(/\b(?:Program|College|Campus|Advisor|Academic Standing|UNCG Credits Earned|Transfer Credits Earned|Overall Credits Earned|Overall GPA)\b/i)[0]
+    .trim();
+}
+
 function buildInitialState(storedState) {
   const parsedAudit = storedState?.parsedAudit || null;
   const initialProgram = getProgramById(storedState?.programId);
@@ -234,18 +328,86 @@ export default function ExploreTopics() {
     () => Array.from(new Set((parsedAudit?.inProgressCourses || []).map(normalizeCourseCode).filter(Boolean))),
     [parsedAudit]
   );
+  const importedCompletedSet = useMemo(() => new Set(importedCompletedCourses), [importedCompletedCourses]);
+  const importedInProgressSet = useMemo(() => new Set(importedInProgressCourses), [importedInProgressCourses]);
   const importedRemainingCourses = useMemo(
-    () => Array.from(new Set((parsedAudit?.remainingCourses || []).map(normalizeCourseCode).filter(Boolean))),
+    () =>
+      Array.from(
+        new Set(
+          (parsedAudit?.remainingCourses || [])
+            .map(normalizeCourseCode)
+            .filter((code) => code && !importedInProgressSet.has(code) && !importedCompletedSet.has(code))
+        )
+      ),
+    [parsedAudit, importedCompletedSet, importedInProgressSet]
+  );
+  const importedRemainingRequirements = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          (parsedAudit?.remainingRequirements || [])
+            .map((item) => item?.trim())
+            .filter(Boolean)
+            .filter((item) => !importedInProgressCourses.some((code) => item.includes(code)))
+        )
+      ),
+    [parsedAudit, importedInProgressCourses]
+  );
+  const importedRequirementGroupsFromAudit = useMemo(
+    () =>
+      (parsedAudit?.remainingRequirementGroups || [])
+        .map((group, index) => ({
+          id: `${group.requirementType || "requirement"}-${index}`,
+          label: group.label?.trim() || describeRequirementType(group.requirementType, group.countNeeded),
+          kind: group.requirementType || "requirement",
+          credits: group.creditsNeeded || "",
+          countNeeded: group.countNeeded || 1,
+          options: (group.options || []).map((item) => item?.trim()).filter(Boolean),
+        }))
+        .filter((group) => group.options.length > 0),
     [parsedAudit]
   );
+  const importedRemainingCourseDetails = useMemo(
+    () =>
+      importedRemainingCourses.map((code) => ({
+        code,
+        course: requiredCourses.find((item) => item.code === code) || null,
+      })),
+    [importedRemainingCourses, requiredCourses]
+  );
+  const importedRequirementBlocks = useMemo(
+    () => {
+      if (importedRequirementGroupsFromAudit.length > 0) {
+        return importedRequirementGroupsFromAudit;
+      }
+
+      return importedRemainingRequirements.map((requirement, index) => ({
+        id: `fallback-${index}`,
+        label: requirement,
+        kind: inferRequirementKind(requirement),
+        credits: extractCreditCount(requirement),
+        countNeeded: 1,
+        options: buildRequirementOptions(requirement, requiredCourses, importedRemainingCourses).map(
+          (option) => `${option.code} - ${option.title}`
+        ),
+      }));
+    },
+    [importedRequirementGroupsFromAudit, importedRemainingRequirements, requiredCourses, importedRemainingCourses]
+  );
   const importedNextUpCourses = useMemo(() => {
-    const inProgress = importedInProgressCourses.map((code) => ({ code, label: "In progress" }));
-    const remaining = importedRemainingCourses
-      .filter((code) => !importedInProgressCourses.includes(code))
-      .slice(0, 8)
-      .map((code) => ({ code, label: "Remaining requirement" }));
-    return [...inProgress, ...remaining].slice(0, 8);
-  }, [importedInProgressCourses, importedRemainingCourses]);
+    const remainingClasses = importedRemainingCourseDetails
+      .map(({ code, course }) => ({
+        code,
+        label: course?.title || "Exact course remaining",
+      }));
+    const remainingChoices = importedRequirementBlocks.map((requirement) => ({
+      code: describeRequirementType(requirement.kind, requirement.countNeeded),
+      label: requirement.label,
+    }));
+    return [...remainingClasses, ...remainingChoices].slice(0, 12);
+  }, [importedRemainingCourseDetails, importedRequirementBlocks]);
+  const detectedDegreeName = cleanAuditField(parsedAudit?.degreeName) || "UNCG degree";
+  const detectedConcentration = cleanAuditField(parsedAudit?.concentration);
 
   const completedCount = requiredCourses.filter((course) => completedSet.has(course.code)).length;
   const remainingCourses = requiredCourses.filter((course) => !completedSet.has(course.code));
@@ -321,8 +483,13 @@ export default function ExploreTopics() {
       ).map((course) => course.code)
     );
 
+    const parsedInProgressCodes = new Set((audit.inProgressCourses || []).map(normalizeCourseCode).filter(Boolean));
     const parsedCompletedCodes = Array.from(
-      new Set((audit.completedCourses || []).map(normalizeCourseCode).filter((code) => allCourseCodes.has(code)))
+      new Set(
+        (audit.completedCourses || [])
+          .map(normalizeCourseCode)
+          .filter((code) => allCourseCodes.has(code) && !parsedInProgressCodes.has(code))
+      )
     );
 
     setParsedAudit(audit);
@@ -524,13 +691,13 @@ export default function ExploreTopics() {
                   </article>
                   <article className="plannerStat">
                     <span>Remaining</span>
-                    <strong>{importedRemainingCourses.length}</strong>
-                    <p>Courses or requirements still listed as remaining in the audit.</p>
+                    <strong>{importedRemainingCourses.length + importedRequirementBlocks.length}</strong>
+                    <p>Courses and requirement blocks still listed as remaining in the audit.</p>
                   </article>
                   <article className="plannerStat">
-                    <span>Detected Program</span>
-                    <strong>{parsedAudit.major || program.name}</strong>
-                    <p>{parsedAudit.concentration || "No concentration detected"}</p>
+                    <span>Degree</span>
+                    <strong>{detectedDegreeName}</strong>
+                    <p>{detectedConcentration || "No concentration detected"}</p>
                   </article>
                 </div>
               </article>
@@ -550,9 +717,9 @@ export default function ExploreTopics() {
                         <div>
                           <strong>{item.code}</strong>
                           <h3>{item.label}</h3>
-                          <p>Imported from Degree Works</p>
+                          <p>Remaining requirement from Degree Works</p>
                         </div>
-                        <span>{item.label}</span>
+                        <span>Next up</span>
                       </article>
                     ))}
                   </div>
@@ -592,7 +759,7 @@ export default function ExploreTopics() {
                   {importedInProgressCourses.length > 0 && (
                     <article className="plannerChecklistGroup">
                       <div className="plannerChecklistGroup__header">
-                        <h3>Currently In Progress</h3>
+                        <h3>Classes In Progress</h3>
                         <span>{importedInProgressCourses.length}</span>
                       </div>
                       <div className="plannerCourseList">
@@ -602,7 +769,7 @@ export default function ExploreTopics() {
                               <div className="plannerCourse__top">
                                 <strong>{code}</strong>
                               </div>
-                              <h4>Course in progress</h4>
+                              <h4>{requiredCourses.find((item) => item.code === code)?.title || "Course in progress"}</h4>
                               <p>Detected from Degree Works PDF.</p>
                             </div>
                             <span className="plannerCourse__status plannerCourse__status--ready">In progress</span>
@@ -614,20 +781,54 @@ export default function ExploreTopics() {
 
                   <article className="plannerChecklistGroup">
                     <div className="plannerChecklistGroup__header">
-                      <h3>Remaining Courses</h3>
-                      <span>{importedRemainingCourses.length}</span>
+                      <h3>Remaining Requirements</h3>
+                      <span>{importedRemainingCourses.length + importedRequirementBlocks.length}</span>
                     </div>
                     <div className="plannerCourseList">
-                      {importedRemainingCourses.map((code) => (
+                      {importedRemainingCourseDetails.map(({ code, course }) => (
                         <article key={code} className="plannerCourse">
                           <div className="plannerCourse__body">
                             <div className="plannerCourse__top">
                               <strong>{code}</strong>
                             </div>
-                            <h4>Remaining requirement</h4>
-                            <p>Imported from Degree Works PDF.</p>
+                            <h4>{course?.title || "Exact course requirement"}</h4>
+                            <p>Exact class still needed according to Degree Works.</p>
                           </div>
                           <span className="plannerCourse__status plannerCourse__status--blocked">Remaining</span>
+                        </article>
+                      ))}
+
+                      {importedRequirementBlocks.map((requirement) => (
+                        <article key={requirement.id || requirement.label} className="plannerCourse">
+                          <div className="plannerCourse__body">
+                            <div className="plannerCourse__top">
+                              <strong>{describeRequirementType(requirement.kind, requirement.countNeeded)}</strong>
+                            </div>
+                            <h4>{requirement.label}</h4>
+                            <p>
+                              {requirement.credits
+                                ? `${requirement.credits} still needed in this area.`
+                                : "Imported from Degree Works PDF."}
+                            </p>
+                            {requirement.options.length > 0 ? (
+                              <details className="plannerRequirementDetails">
+                                <summary>See possible options</summary>
+                                <div className="plannerRequirementOptions">
+                                  {requirement.options.map((option) => (
+                                    <div key={option} className="plannerRequirementOption">
+                                      <strong>{option.split(" - ")[0]}</strong>
+                                      <span>{option.split(" - ").slice(1).join(" - ") || "Option from Degree Works"}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </details>
+                            ) : (
+                              <p className="plannerRequirementHint">
+                                Exact option mapping was not clear from the audit. Use the requirement text above as the source of truth.
+                              </p>
+                            )}
+                          </div>
+                          <span className="plannerCourse__status plannerCourse__status--blocked">Still needed</span>
                         </article>
                       ))}
                     </div>
