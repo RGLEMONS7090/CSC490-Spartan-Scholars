@@ -341,6 +341,25 @@ function buildDetectedProgramName(parsedAudit) {
   return degree || major || "UNCG degree";
 }
 
+function buildAuditOverview(parsedAudit) {
+  const major = cleanAuditField(parsedAudit?.major);
+  const concentration = cleanAuditField(parsedAudit?.concentration);
+  const minor = cleanAuditField(parsedAudit?.minor);
+
+  const parts = [];
+  if (major) {
+    parts.push(`Major: ${major}`);
+  }
+  if (concentration) {
+    parts.push(`Concentration: ${concentration}`);
+  }
+  if (minor) {
+    parts.push(`Minor: ${minor}`);
+  }
+
+  return parts.join(" | ") || "Imported directly from Degree Works.";
+}
+
 function buildInitialState(storedState) {
   const parsedAudit = storedState?.parsedAudit || null;
   const initialProgram = getProgramById(storedState?.programId);
@@ -551,9 +570,9 @@ export default function ExploreTopics() {
   );
   const importedNextUpCourses = useMemo(() => {
     const remainingClasses = importedRemainingCourseDetails
-      .map(({ code, course }) => ({
+      .map(({ code, course, parsedTitle }) => ({
         code,
-        label: course?.title || "Exact course remaining",
+        label: parsedTitle || course?.title || "Exact course remaining",
       }));
     const remainingChoices = importedRequirementBlocks.map((requirement) => ({
       code: formatRequirementHeading(requirement),
@@ -561,11 +580,12 @@ export default function ExploreTopics() {
         ? `${requirement.credits} still needed in this area.`
         : "Remaining requirement from Degree Works",
     }));
-    return [...remainingClasses, ...remainingChoices].slice(0, 12);
+    return [...remainingClasses, ...remainingChoices].slice(0, 5);
   }, [importedRemainingCourseDetails, importedRequirementBlocks]);
   const detectedDegreeName = buildDetectedProgramName(parsedAudit);
   const detectedConcentration = cleanAuditField(parsedAudit?.concentration);
   const detectedMinor = cleanAuditField(parsedAudit?.minor);
+  const importedAuditOverview = buildAuditOverview(parsedAudit);
 
   const completedCount = requiredCourses.filter((course) => completedSet.has(course.code)).length;
   const remainingCourses = requiredCourses.filter((course) => !completedSet.has(course.code));
@@ -836,9 +856,9 @@ export default function ExploreTopics() {
 
           <div className="plannerHero__panel">
             <div className="plannerHero__school">University of North Carolina Greensboro</div>
-            <div className="plannerHero__meta">{program.college}</div>
-            <div className="plannerHero__program">{program.name}</div>
-            <p>{program.overview}</p>
+            <div className="plannerHero__meta">{importedAuditMode ? "Imported Degree Works Audit" : program.college}</div>
+            <div className="plannerHero__program">{importedAuditMode ? detectedDegreeName : program.name}</div>
+            <p>{importedAuditMode ? importedAuditOverview : program.overview}</p>
           </div>
         </section>
 
@@ -997,32 +1017,13 @@ export default function ExploreTopics() {
                       {importedRequirementBlocks.map((requirement) => (
                         <article key={requirement.id || requirement.label} className="plannerCourse">
                           <div className="plannerCourse__body">
-                            <div className="plannerCourse__top">
-                              <strong>{formatRequirementHeading(requirement)}</strong>
-                            </div>
                             <h4>{describeRequirementType(requirement.kind, requirement.countNeeded)}</h4>
                             <p>
                               {requirement.credits
                                 ? `${requirement.credits} still needed in this area.`
                                 : "Imported from Degree Works PDF."}
                             </p>
-                            {requirement.options.length > 0 ? (
-                              <details className="plannerRequirementDetails">
-                                <summary>See possible options</summary>
-                                <div className="plannerRequirementOptions">
-                                  {requirement.options.map((option) => (
-                                    <div key={option} className="plannerRequirementOption">
-                                      <strong>{option.split(" - ")[0]}</strong>
-                                      <span>{option.split(" - ").slice(1).join(" - ") || "Option from Degree Works"}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </details>
-                            ) : (
-                              <p className="plannerRequirementHint">
-                                Exact option mapping was not clear from the audit. Use the requirement text above as the source of truth.
-                              </p>
-                            )}
+                            <p className="plannerRequirementSummary">{formatRequirementHeading(requirement)}</p>
                           </div>
                           <span className="plannerCourse__status plannerCourse__status--blocked">Still needed</span>
                         </article>

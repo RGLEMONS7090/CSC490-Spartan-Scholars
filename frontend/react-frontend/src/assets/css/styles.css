@@ -4440,13 +4440,22 @@ body{
   overflow-wrap: anywhere;
 }
 
+.plannerRequirementSummary {
+  margin: 8px 0 0;
+  color: var(--brandBlue);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
 .plannerRecommendation span {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 56px;
+  flex: 0 0 auto;
+  min-width: 88px;
   min-height: 36px;
   padding: 0 12px;
+  white-space: nowrap;
   border-radius: 999px;
   background: rgba(29,79,174,.1);
   color: var(--btnBlue);
@@ -4536,7 +4545,7 @@ body{
 
 .plannerCourse {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 14px;
   align-items: flex-start;
   padding: 14px;
@@ -4550,6 +4559,7 @@ body{
 }
 
 .plannerCourse--selector {
+  grid-template-columns: auto minmax(0, 1fr);
   cursor: pointer;
 }
 
@@ -4595,46 +4605,6 @@ body{
   color: #9a3412;
 }
 
-.plannerRequirementDetails {
-  margin-top: 0.85rem;
-  border-top: 1px solid rgba(15, 23, 42, 0.08);
-  padding-top: 0.85rem;
-}
-
-.plannerRequirementDetails summary {
-  cursor: pointer;
-  font-weight: 700;
-  color: #1d4ed8;
-}
-
-.plannerRequirementOptions {
-  margin-top: 0.85rem;
-  display: grid;
-  gap: 0.6rem;
-}
-
-.plannerRequirementOption {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.8rem 0.95rem;
-  border-radius: 14px;
-  background: rgba(29, 78, 216, 0.08);
-}
-
-.plannerRequirementOption strong {
-  color: #1e3a8a;
-}
-
-.plannerRequirementOption span {
-  color: #475569;
-  text-align: right;
-}
-
-.plannerRequirementHint {
-  margin-top: 0.75rem;
-  color: #64748b;
-}
 
 .plannerCourse--done {
   opacity: 0.78;
@@ -4693,25 +4663,8 @@ body{
   color: #fdba74;
 }
 
-:root[data-theme="dark"] .plannerRequirementDetails {
-  border-top-color: rgba(148,163,184,.18);
-}
-
-:root[data-theme="dark"] .plannerRequirementDetails summary {
+:root[data-theme="dark"] .plannerRequirementSummary {
   color: #93c5fd;
-}
-
-:root[data-theme="dark"] .plannerRequirementOption {
-  background: rgba(59,130,246,.12);
-}
-
-:root[data-theme="dark"] .plannerRequirementOption strong {
-  color: #dbeafe;
-}
-
-:root[data-theme="dark"] .plannerRequirementOption span,
-:root[data-theme="dark"] .plannerRequirementHint {
-  color: #cbd5e1;
 }
 
 :root[data-theme="dark"] .plannerCourse--done {
