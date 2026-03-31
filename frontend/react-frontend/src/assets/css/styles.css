@@ -4281,8 +4281,36 @@ body{
   margin-bottom: 20px;
 }
 
+.plannerAuditLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+  gap: 20px;
+  margin-bottom: 20px;
+  align-items: stretch;
+}
+
+.plannerAuditColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 0;
+}
+
 .plannerCard {
   padding: 22px;
+}
+
+.plannerCard--auditSnapshot {
+  padding: 18px;
+}
+
+.plannerCard--auditSnapshot .plannerCard__heading h2 {
+  font-size: 1.28rem;
+}
+
+.plannerCard--auditSnapshot .plannerCard__heading p {
+  font-size: 0.95rem;
+  line-height: 1.45;
 }
 
 .plannerCard__heading h2 {
@@ -4372,11 +4400,20 @@ body{
   margin-top: 18px;
 }
 
+.plannerStats--auditSnapshot {
+  gap: 12px;
+  margin-top: 14px;
+}
+
 .plannerStat {
   padding: 16px;
   border-radius: 18px;
   background: rgba(248, 250, 252, 0.95);
   border: 1px solid rgba(203, 213, 225, 0.7);
+}
+
+.plannerStat--auditSnapshot {
+  padding: 14px;
 }
 
 .plannerStat span {
@@ -4392,6 +4429,17 @@ body{
   display: block;
   margin: 10px 0 6px;
   font-size: 2rem;
+}
+
+.plannerStat--auditSnapshot strong {
+  margin: 8px 0 4px;
+  font-size: 1.7rem;
+  line-height: 1.1;
+}
+
+.plannerStat--auditSnapshot p {
+  font-size: 0.92rem;
+  line-height: 1.45;
 }
 
 .plannerStat p,
@@ -4474,6 +4522,14 @@ body{
   align-items: start;
 }
 
+.plannerCard--takenAudit {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .plannerBlocked {
   margin-top: 18px;
 }
@@ -4541,6 +4597,13 @@ body{
 .plannerCourseSelector--imported {
   overflow-y: auto;
   padding-right: 0;
+}
+
+.plannerCourseSelector--auditFill {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
 }
 
 .plannerCourse {
@@ -4675,6 +4738,7 @@ body{
   .plannerUploadShell,
   .plannerHero,
   .plannerControls,
+  .plannerAuditLayout,
   .plannerBoard,
   .plannerTwoColumn {
     grid-template-columns: 1fr;

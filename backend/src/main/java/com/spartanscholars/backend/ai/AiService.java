@@ -562,7 +562,6 @@ public class AiService {
         String major = extractAfterLabel(auditText, "Major");
         String concentration = extractAfterLabel(auditText, "Concentration");
         String minor = extractAfterLabel(auditText, "Minor");
-
         List<String> lines = normalizeAuditLines(auditText);
         Map<String, String> titleMap = extractCourseTitleMap(lines);
         List<String> inProgressCourses = extractInProgressCourses(lines);
