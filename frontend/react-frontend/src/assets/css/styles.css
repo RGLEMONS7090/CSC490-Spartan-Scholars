@@ -1081,11 +1081,8 @@ body{
   width: 54px;
   height: 54px;
   border-radius: 14px;
-  border: 2px solid var(--activeNav);
-  color: var(--activeNav);
-  display: grid;
-  place-items: center;
-  font-weight: 700;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .discussionTitle h1{
@@ -1097,6 +1094,25 @@ body{
   margin: 10px 0 0;
   color: var(--textSoft);
   font-size: 18px;
+}
+
+.discussionTitle__iconImage{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.discussionTitle__iconImage--dark{
+  display: none;
+}
+
+:root[data-theme="dark"] .discussionTitle__iconImage--light{
+  display: none;
+}
+
+:root[data-theme="dark"] .discussionTitle__iconImage--dark{
+  display: block;
 }
 
 .discussionTop__button{
@@ -2789,10 +2805,22 @@ body{
   align-items: flex-start;
   gap: 12px;
   flex: 1;
+  cursor: pointer;
 }
 
 .analyticsTaskToggle input{
   margin-top: 4px;
+  cursor: pointer;
+  accent-color: var(--activeNav);
+}
+
+.analyticsTaskToggle input:disabled{
+  cursor: wait;
+}
+
+.analyticsTaskCount{
+  margin: 0 0 12px;
+  color: var(--textSoft);
 }
 
 .analyticsEmpty{

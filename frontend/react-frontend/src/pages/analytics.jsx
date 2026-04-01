@@ -68,6 +68,7 @@ export default function Analytics() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [taskSaving, setTaskSaving] = useState(false);
+  const [taskUpdatingId, setTaskUpdatingId] = useState(null);
   const [eventSaving, setEventSaving] = useState(false);
   const [error, setError] = useState("");
   const [taskForm, setTaskForm] = useState(blankTaskForm);
@@ -132,6 +133,8 @@ export default function Analytics() {
     ];
   }, [events, tasks]);
 
+  const completedTaskCount = useMemo(() => tasks.filter((task) => task.completed).length, [tasks]);
+
   const calendarDays = useMemo(() => buildCalendarDays(currentMonth, events), [currentMonth, events]);
 
   async function handleTaskSubmit(event) {
@@ -179,17 +182,28 @@ export default function Analytics() {
 
   async function handleToggleTask(task) {
     setError("");
+    const nextCompleted = !task.completed;
+    setTaskUpdatingId(task.id);
+    setTasks((prev) => prev.map((item) => (item.id === task.id ? { ...item, completed: nextCompleted } : item)));
+
     try {
-      const updated = await updateTask(task.id, {
-        title: task.title,
-        description: task.description,
-        dueDate: task.dueDate,
-        completed: !task.completed,
-        createdBy: task.createdBy,
-      });
-      setTasks((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+      const updated = await updateTask(task.id, { completed: nextCompleted });
+      setTasks((prev) =>
+        prev.map((item) =>
+          item.id === task.id
+            ? {
+                ...item,
+                ...updated,
+                completed: typeof updated.completed === "boolean" ? updated.completed : nextCompleted,
+              }
+            : item
+        )
+      );
     } catch (err) {
+      setTasks((prev) => prev.map((item) => (item.id === task.id ? { ...item, completed: task.completed } : item)));
       setError(err.message);
+    } finally {
+      setTaskUpdatingId(null);
     }
   }
 
@@ -408,6 +422,9 @@ export default function Analytics() {
 
                 <div className="analyticsList">
                   <h3>Your Tasks</h3>
+                  <p className="analyticsTaskCount">
+                    Completed {completedTaskCount} of {tasks.length} tasks
+                  </p>
                   {tasks.length === 0 ? (
                     <p className="analyticsEmpty">No tasks yet.</p>
                   ) : (
@@ -417,6 +434,7 @@ export default function Analytics() {
                           <input
                             type="checkbox"
                             checked={task.completed}
+                            disabled={taskUpdatingId === task.id}
                             onChange={() => handleToggleTask(task)}
                           />
                           <div>
