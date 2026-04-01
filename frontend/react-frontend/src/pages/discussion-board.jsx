@@ -2,6 +2,8 @@ import { Link, useNavigate } from "react-router-dom";
 import {useState, useEffect} from "react";
 import {Helmet} from "react-helmet-async";
 import {fetchDiscussions} from "../assets/js/api/discussionAPi";
+import discussionLightImage from "../assets/images/Light_dicussion.png";
+import discussionDarkImage from "../assets/images/dark_mode_dicussion.png";
 
 export default function DiscussionBoard() {
 
@@ -78,7 +80,18 @@ export default function DiscussionBoard() {
           <section className="discussionTop">
             <div>
               <div className="discussionTitle">
-                <div className="discussionTitle__icon">D</div>
+                <div className="discussionTitle__icon" aria-hidden="true">
+                  <img
+                    src={discussionLightImage}
+                    alt=""
+                    className="discussionTitle__iconImage discussionTitle__iconImage--light"
+                  />
+                  <img
+                    src={discussionDarkImage}
+                    alt=""
+                    className="discussionTitle__iconImage discussionTitle__iconImage--dark"
+                  />
+                </div>
                 <h1>Discussion Board</h1>
               </div>
               <p className="discussionTop__subtitle">
