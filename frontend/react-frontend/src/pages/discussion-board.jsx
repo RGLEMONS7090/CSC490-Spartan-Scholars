@@ -2,8 +2,8 @@ import { Link, useNavigate } from "react-router-dom";
 import {useState, useEffect} from "react";
 import {Helmet} from "react-helmet-async";
 import {fetchDiscussions} from "../assets/js/api/discussionAPi";
-import discussionLightImage from "../assets/images/Light_dicussion.png";
-import discussionDarkImage from "../assets/images/dark_mode_dicussion.png";
+import discussionLightImage from "../assets/images/light_dicsussion.png";
+import discussionDarkImage from "../assets/images/dark_mode_dicsussion.png";
 
 export default function DiscussionBoard() {
 
