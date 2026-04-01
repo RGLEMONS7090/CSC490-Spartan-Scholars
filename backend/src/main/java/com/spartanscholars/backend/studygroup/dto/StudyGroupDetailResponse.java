@@ -8,6 +8,8 @@ public record StudyGroupDetailResponse(
         String course,
         String description,
         String ownerName,
+        boolean privateGroup,
+        String accessCode,
         boolean owner,
         long memberCount,
         boolean joined,

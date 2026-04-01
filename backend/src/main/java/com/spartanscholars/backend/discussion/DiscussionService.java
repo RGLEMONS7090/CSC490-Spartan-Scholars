@@ -1,5 +1,6 @@
 package com.spartanscholars.backend.discussion;
 
+import com.spartanscholars.backend.notification.NotificationService;
 import com.spartanscholars.backend.discussion.dto.CommentResponse;
 import com.spartanscholars.backend.discussion.dto.CreateCommentRequest;
 import com.spartanscholars.backend.discussion.dto.CreateDiscussionRequest;
@@ -25,15 +26,18 @@ public class DiscussionService {
     private final DiscussionRepository discussionRepository;
     private final DiscussionLikeRepository discussionLikeRepository;
     private final DiscussionCommentRepository discussionCommentRepository;
+    private final NotificationService notificationService;
 
     public DiscussionService(
             DiscussionRepository discussionRepository,
             DiscussionLikeRepository discussionLikeRepository,
-            DiscussionCommentRepository discussionCommentRepository
+            DiscussionCommentRepository discussionCommentRepository,
+            NotificationService notificationService
     ) {
         this.discussionRepository = discussionRepository;
         this.discussionLikeRepository = discussionLikeRepository;
         this.discussionCommentRepository = discussionCommentRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional(readOnly = true)
@@ -165,6 +169,7 @@ public class DiscussionService {
         DiscussionComment saved = discussionCommentRepository.save(comment);
         discussion.touch();
         discussionRepository.save(discussion);
+        notifyDiscussionParticipants(discussion, comment, authenticated);
 
         return new CommentResponse(
                 saved.getId(),
@@ -288,5 +293,23 @@ public class DiscussionService {
                 d.getCreatedAt(),
                 d.getUpdatedAt()
         );
+    }
+
+    private void notifyDiscussionParticipants(Discussion discussion, DiscussionComment comment, User author) {
+        if (comment.getParent() != null && !comment.getParent().getAuthor().getId().equals(author.getId())) {
+            notificationService.notifyUser(
+                    comment.getParent().getAuthor(),
+                    "New reply to your discussion comment",
+                    author.getName() + " replied in " + discussion.getTitle() + ".",
+                    "/discussion-board/" + discussion.getId()
+            );
+        } else if (!discussion.getOwner().getId().equals(author.getId())) {
+            notificationService.notifyUser(
+                    discussion.getOwner(),
+                    "New discussion reply",
+                    author.getName() + " commented on " + discussion.getTitle() + ".",
+                    "/discussion-board/" + discussion.getId()
+            );
+        }
     }
 }

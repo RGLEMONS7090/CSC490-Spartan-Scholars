@@ -238,7 +238,7 @@ export default function Analytics() {
   return (
     <>
       <Helmet>
-        <title>Your Analytics</title>
+        <title>Productivity Hub</title>
       </Helmet>
 
       <main className="main main--quizzes">
@@ -246,7 +246,7 @@ export default function Analytics() {
           <div className="quizzesHeader__title">
             <div className="quizzesHeader__icon">A</div>
             <div>
-              <h1>Learning Analytics</h1>
+              <h1>Productivity Hub</h1>
               <p>
                 {profile?.name
                   ? `${profile.name}'s study dashboard with tasks and calendar planning.`
@@ -257,7 +257,7 @@ export default function Analytics() {
         </section>
 
         {loading ? (
-          <p>Loading analytics...</p>
+          <p>Loading productivity hub...</p>
         ) : (
           <>
             <section className="quizStats analyticsStats">

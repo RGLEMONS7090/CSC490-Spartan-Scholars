@@ -67,6 +67,14 @@ export async function joinStudyGroup(id) {
   return response.json();
 }
 
+export async function joinPrivateStudyGroup(password) {
+  const response = await apiFetch("/api/study-groups/join-private", {
+    method: "POST",
+    body: JSON.stringify({ password }),
+  });
+  return response.json();
+}
+
 export async function sendStudyGroupMessage(id, content) {
   const response = await apiFetch(`/api/study-groups/${id}/messages`, {
     method: "POST",

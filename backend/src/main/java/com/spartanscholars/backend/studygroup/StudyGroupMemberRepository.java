@@ -30,5 +30,7 @@ public interface StudyGroupMemberRepository extends JpaRepository<StudyGroupMemb
             """)
     List<Long> findJoinedGroupIds(@Param("userId") Long userId, @Param("groupIds") Collection<Long> groupIds);
 
+    List<StudyGroupMember> findByGroupId(Long groupId);
+
     void deleteByUserId(Long userId);
 }

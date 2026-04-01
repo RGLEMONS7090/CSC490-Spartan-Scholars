@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface StudyGroupSharedItemRepository extends JpaRepository<StudyGroupSharedItem, Long> {
 
-    @EntityGraph(attributePaths = {"sharedBy", "note", "quiz"})
+    @EntityGraph(attributePaths = {"sharedBy"})
     List<StudyGroupSharedItem> findByGroupIdOrderByCreatedAtDesc(Long groupId);
 
     @EntityGraph(attributePaths = {"group", "sharedBy", "note", "quiz"})

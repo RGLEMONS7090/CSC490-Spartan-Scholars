@@ -1,99 +1,68 @@
 import { Link } from "react-router-dom";
-import {useState} from "react";
+import { Helmet } from "react-helmet-async";
 import useTheme from "../assets/js/useTheme";
-import {logout} from "../assets/js/utils/logout";
-import {Helmet} from "react-helmet-async";
 
-import notes_icon from "../assets/images/notes_icon.png";
-import discussion_icon from "../assets/images/discussion_icon.png";
-import ai_icon from "../assets/images/ai_icon.png";
+import notesIcon from "../assets/images/notes_icon.png";
+import discussionIcon from "../assets/images/discussion_icon.png";
+import aiIcon from "../assets/images/ai_icon.png";
+
+const featureCards = [
+  {
+    icon: notesIcon,
+    title: "Notes & Summaries",
+    text: "Create, organize, and revisit your class notes in one place so studying starts with clean material.",
+    link: "/notes",
+  },
+  {
+    icon: discussionIcon,
+    title: "Discussion Board",
+    text: "Ask questions, reply to classmates, and keep course conversations moving without losing context.",
+    link: "/discussion-board",
+  },
+  {
+    icon: aiIcon,
+    title: "AI Study Help",
+    text: "Use AI to summarize notes, build quizzes, and turn rough material into something you can actually study from.",
+    link: "/ai-assistant",
+  },
+];
 
 export default function Index() {
+  useTheme();
 
   return (
     <>
       <Helmet>
-        <title> Dashboard </title>
+        <title>Dashboard</title>
       </Helmet>
 
-        <main className="main">
-          <section className="hero">
-            <h1>Welcome to Spartan Scholars</h1>
-            <p>Your all-in-one study platform for notes, discussions, and AI-powered learning.</p>
-          </section>
+      <main>
+        <section className="hero">
+          <h1>Welcome to Spartan Scholars</h1>
+          <p>Your central workspace for notes, study groups, quizzes, and course momentum.</p>
+        </section>
 
-          <section className="section">
-            <div className="row g-4">
-              {/* Notes & Summaries */}
-              <div className="col-12 col-md-6 col-xl-4">
-                <article className="featureCard h-100">
-                  <div className="featureCard__iconWrap">
-                    {/*<span className="featureCard__icon">N</span> */}
-                    <img
-                    src={notes_icon}
-                    alt="Notes Icon" />
-                  </div>
-                  <h2>Notes &amp; Summaries</h2>
-                  <p>Create and organize study notes with fast search and tagging.</p>
-                  <ul className="bullets">
-                    <li><span className="dot dot--green"></span>Save Your Notes</li>
-                    <li><span className="dot dot--blue"></span>Text Editor</li>
-                    <li><span className="dot dot--blue"></span>Categories &amp; Tags</li>
-                  </ul>
-                  <Link className="primaryBtn primaryBtn--link" to="/notes">
-                    Get Started <span className="arrow">→</span>
-                  </Link>
-                </article>
-              </div>
-
-              {/* Discussion Board */}
-              <div className="col-12 col-md-6 col-xl-4">
-                <article className="featureCard h-100">
-                  <div className="featureCard__iconWrap">
-                    <img
-                      src={discussion_icon}
-                      alt="Discussion Icon" />
-                    {/*<span className="featureCard__icon">D</span>*/}
-                  </div>
-                  <h2>Discussion Board</h2>
-                  <p>Join communities, ask questions, and collaborate with peers.</p>
-                  <ul className="bullets">
-                    <li><span className="dot dot--green"></span>Active Communities</li>
-                    <li><span className="dot dot--blue"></span>Topic Threads</li>
-                    <li><span className="dot dot--blue"></span>Peer Support</li>
-                  </ul>
-                  <Link className="primaryBtn primaryBtn--link" to="/discussion-board">
-                    Get Started <span className="arrow">→</span>
-                  </Link>
-                </article>
-              </div>
-
-              {/* AI Summarizer */}
-              <div className="col-12 col-md-6 col-xl-4">
-                <article className="featureCard h-100">
-                  <div className="featureCard__iconWrap">
-                    <img
-                      src={ai_icon}
-                      alt="AI Icon" />
-                    {/*<span className="featureCard__icon">*</span>*/}
-                  </div>
-                  <h2>AI Note Summarizer</h2>
-                  <p>Turn notes into summaries, flashcards, and key points in seconds.</p>
-                  <ul className="bullets">
-                    <li><span className="dot dot--green"></span>Auto Summaries</li>
-                    <li><span className="dot dot--blue"></span>Flashcard Generation</li>
-                    <li><span className="dot dot--blue"></span>Key Concept Extraction</li>
-                  </ul>
-                  <Link className="primaryBtn primaryBtn--link" to="/ai-assistant">
-                    Get Started <span className="arrow">→</span>
-                  </Link>
-                </article>
-              </div>
-
-            </div>
-          </section>
-        </main>
-      
+        <section className="section">
+          <div className="grid grid-3">
+            {featureCards.map((card, index) => (
+              <article key={card.title} className="featureCard">
+                <div
+                  className={`featureCard__iconWrap ${
+                    index === 1 ? "featureCard__iconWrap--purple" : index === 2 ? "featureCard__iconWrap--gold" : ""
+                  }`}
+                >
+                  <img src={card.icon} alt="" />
+                </div>
+                <h2>{card.title}</h2>
+                <p>{card.text}</p>
+                <Link className="primaryBtn primaryBtn--link" to={card.link}>
+                  Get Started
+                </Link>
+              </article>
+            ))}
+          </div>
+        </section>
+      </main>
     </>
   );
 }

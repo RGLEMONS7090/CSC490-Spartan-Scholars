@@ -3,6 +3,7 @@ package com.spartanscholars.backend.studygroup;
 import com.spartanscholars.backend.studygroup.dto.CreateStudyGroupMessageRequest;
 import com.spartanscholars.backend.studygroup.dto.CreateStudyGroupRequest;
 import com.spartanscholars.backend.studygroup.dto.CreateStudyGroupShareRequest;
+import com.spartanscholars.backend.studygroup.dto.JoinPrivateStudyGroupRequest;
 import com.spartanscholars.backend.studygroup.dto.StudyGroupDetailResponse;
 import com.spartanscholars.backend.studygroup.dto.StudyGroupMessageResponse;
 import com.spartanscholars.backend.studygroup.dto.StudyGroupSummaryResponse;
@@ -60,6 +61,14 @@ public class StudyGroupController {
             @PathVariable Long id
     ) {
         return ResponseEntity.ok(studyGroupService.join(user, id));
+    }
+
+    @PostMapping("/join-private")
+    public ResponseEntity<StudyGroupDetailResponse> joinPrivate(
+            @AuthenticationPrincipal User user,
+            @RequestBody JoinPrivateStudyGroupRequest request
+    ) {
+        return ResponseEntity.ok(studyGroupService.joinPrivate(user, request));
     }
 
     @PostMapping("/{id}/messages")

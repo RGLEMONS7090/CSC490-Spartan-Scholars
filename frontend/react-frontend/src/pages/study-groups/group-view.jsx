@@ -4,7 +4,7 @@ import { Helmet } from "react-helmet-async";
 import { apiFetch } from "../../assets/js/api/notesApi";
 import { deleteStudyGroup, fetchStudyGroup, importStudyGroupItem, joinStudyGroup, sendStudyGroupMessage, shareStudyGroupItems } from "../../assets/js/api/studyGroupsApi";
 
-const CHAT_POLL_INTERVAL_MS = 2000;
+const CHAT_POLL_INTERVAL_MS = 5000;
 
 function formatTimestamp(value) {
   if (!value) {
@@ -33,6 +33,7 @@ export default function StudyGroupView() {
   const [shareableQuizzes, setShareableQuizzes] = useState([]);
   const [selectedNoteIds, setSelectedNoteIds] = useState([]);
   const [selectedQuizIds, setSelectedQuizIds] = useState([]);
+  const [showAccessCode, setShowAccessCode] = useState(false);
   const [error, setError] = useState("");
   const chatFeedRef = useRef(null);
   const latestMessageIdRef = useRef(null);
@@ -226,8 +227,24 @@ export default function StudyGroupView() {
             <p>{group.description || "No description yet."}</p>
             <div className="groupDetail__stats">
               <span>{group.memberCount} members</span>
+              <span>{group.privateGroup ? "Private group" : "Public group"}</span>
               <span>{group.joined ? "You are a member" : "Join to send messages"}</span>
             </div>
+            {group.privateGroup && group.accessCode && (
+              <div className="groupShareActions">
+                <button className="quizActionBtn quizActionBtn--secondary" type="button" onClick={() => setShowAccessCode((prev) => !prev)}>
+                  {showAccessCode ? "Hide Group Password" : "Show Group Password"}
+                </button>
+              </div>
+            )}
+            {group.privateGroup && group.accessCode && showAccessCode && (
+              <div className="sharePanel">
+                <span className="sharePanel__label">Private group password</span>
+                <div className="sharePanel__row">
+                  <code className="sharePanel__code">{group.accessCode}</code>
+                </div>
+              </div>
+            )}
             {group.joined && (
               <div className="groupShareActions">
                 <button className="quizActionBtn quizActionBtn--secondary" type="button" onClick={openSharePicker}>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { createStudyGroup, fetchStudyGroups, joinStudyGroup } from "../assets/js/api/studyGroupsApi";
+import { createStudyGroup, fetchStudyGroups, joinPrivateStudyGroup, joinStudyGroup } from "../assets/js/api/studyGroupsApi";
 
 function formatUpdatedAt(value) {
   if (!value) {
@@ -22,10 +22,13 @@ export default function StudyGroups() {
     name: "",
     course: "",
     description: "",
+    privateGroup: false,
   });
+  const [privatePassword, setPrivatePassword] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [joiningId, setJoiningId] = useState(null);
+  const [joiningPrivate, setJoiningPrivate] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -75,6 +78,25 @@ export default function StudyGroups() {
       setJoiningId(null);
     }
   }
+
+  async function handleJoinPrivate(event) {
+    event.preventDefault();
+    setJoiningPrivate(true);
+    setError("");
+    try {
+      const group = await joinPrivateStudyGroup(privatePassword.trim());
+      setPrivatePassword("");
+      navigate(`/study-groups/${group.id}`);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setJoiningPrivate(false);
+    }
+  }
+
+  const privateGroups = groups.filter((group) => group.privateGroup);
+  const publicGroups = groups.filter((group) => !group.privateGroup);
+  const searching = query.trim().length > 0;
 
   return (
     <>
@@ -132,6 +154,25 @@ export default function StudyGroups() {
                 />
               </label>
 
+              <div className="groupPrivacyToggle groupCreateForm__full">
+                <div>
+                  <strong>{form.privateGroup ? "Private Group" : "Public Group"}</strong>
+                  <p>
+                    {form.privateGroup
+                      ? "Only members with the private password can join and see this group."
+                      : "Anyone can find and join this group from the public list."}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className={`settingsMenu__switch ${form.privateGroup ? "settingsMenu__switch--active" : ""}`}
+                  aria-label={form.privateGroup ? "Switch to public group" : "Switch to private group"}
+                  onClick={() => setForm((prev) => ({ ...prev, privateGroup: !prev.privateGroup }))}
+                >
+                  <span className="settingsMenu__themeThumb"></span>
+                </button>
+              </div>
+
               <button className="quizActionBtn quizActionBtn--primary" type="submit" disabled={saving}>
                 {saving ? "Creating..." : "Create Group"}
               </button>
@@ -148,17 +189,82 @@ export default function StudyGroups() {
               placeholder="Search by group name, course, or topic"
             />
           </label>
+          <form className="groupPrivateJoin" onSubmit={handleJoinPrivate}>
+            <input
+              className="groupSearchBar__privateInput"
+              value={privatePassword}
+              onChange={(event) => setPrivatePassword(event.target.value)}
+              placeholder="Enter private group password"
+            />
+            <button className="quizActionBtn quizActionBtn--secondary" type="submit" disabled={joiningPrivate}>
+              {joiningPrivate ? "Joining..." : "Join a Private Group"}
+            </button>
+          </form>
         </section>
 
         {loading ? (
           <p>Loading groups...</p>
         ) : (
-          <section className="groupsGrid">
-            {groups.map((group) => (
+          <section className="groupBoard">
+            <div className="groupSection">
+              <div className="groupSection__header">
+                <h2>Private Groups</h2>
+                <p>Only groups you created or already joined appear here.</p>
+              </div>
+              <section className="groupsGrid">
+            {privateGroups.map((group) => (
               <article key={group.id} className="groupCard groupCard--live">
                 <div className="groupCard__top">
                   <span className="groupCard__tag">{group.course}</span>
-                  <span className="groupCard__metaPill">{group.joined ? "Joined" : "Open"}</span>
+                  <span className="groupCard__metaPill">{group.joined ? "Joined" : "Private"}</span>
+                </div>
+
+                <h2>{group.name}</h2>
+
+                <p className="groupCard__text">{group.description || "No description yet."}</p>
+
+                <div className="groupCard__meta groupCard__meta--stacked">
+                  <span>{group.memberCount} members</span>
+                  <span>Hosted by {group.ownerName}</span>
+                  <span>Updated {formatUpdatedAt(group.updatedAt)}</span>
+                </div>
+
+                <div className="groupCard__actions">
+                  <button
+                    type="button"
+                    className={`quizActionBtn ${group.joined ? "quizActionBtn--secondary" : "quizActionBtn--primary"}`}
+                    onClick={() => handleJoin(group)}
+                    disabled={joiningId === group.id}
+                  >
+                    {joiningId === group.id ? "Opening..." : group.joined ? "Open Group" : "Join Group"}
+                  </button>
+
+                  <Link className="quizActionBtn quizActionBtn--secondary" to={`/study-groups/${group.id}`}>
+                    View Chat
+                  </Link>
+                </div>
+              </article>
+            ))}
+            {privateGroups.length === 0 && !searching && (
+              <article className="groupEmptyState">
+                <h2>No private groups found</h2>
+                <p>Join a private group by password or create one.</p>
+              </article>
+            )}
+              </section>
+            </div>
+
+            <div className="groupSection groupSection--public">
+              <div className="groupSection__header">
+                <h2>Public Groups</h2>
+                <p>These groups are searchable and open for anyone to join.</p>
+              </div>
+              <section className="groupsGrid">
+            {publicGroups.map((group) => (
+              <article key={group.id} className="groupCard groupCard--live">
+                <div className="groupCard__top">
+                  <span className="groupCard__tag">{group.course}</span>
+                  <span className="groupCard__metaPill">{group.joined ? "Joined" : "Public"}</span>
                 </div>
 
                 <h2>{group.name}</h2>
@@ -188,10 +294,19 @@ export default function StudyGroups() {
               </article>
             ))}
 
-            {groups.length === 0 && (
+            {publicGroups.length === 0 && !searching && (
+              <article className="groupEmptyState">
+                <h2>No public groups found</h2>
+                <p>Try another search or create the first public group for your course.</p>
+              </article>
+            )}
+              </section>
+            </div>
+
+            {searching && groups.length === 0 && (
               <article className="groupEmptyState">
                 <h2>No groups found</h2>
-                <p>Try another search or create the first group for your course.</p>
+                <p>Try another search or join a private group by password.</p>
               </article>
             )}
           </section>
