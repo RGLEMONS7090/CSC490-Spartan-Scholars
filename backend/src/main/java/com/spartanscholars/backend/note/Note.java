@@ -44,6 +44,12 @@ public class Note {
     @Column(columnDefinition = "TEXT")
     private String fileData;
 
+    @Column(unique = true)
+    private String shareCode;
+
+    @Column(nullable = false)
+    private boolean imported;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -124,6 +130,22 @@ public class Note {
 
     public void setFileData(String fileData) {
         this.fileData = fileData;
+    }
+
+    public String getShareCode() {
+        return shareCode;
+    }
+
+    public void setShareCode(String shareCode) {
+        this.shareCode = shareCode;
+    }
+
+    public boolean isImported() {
+        return imported;
+    }
+
+    public void setImported(boolean imported) {
+        this.imported = imported;
     }
 
     public Instant getCreatedAt() {

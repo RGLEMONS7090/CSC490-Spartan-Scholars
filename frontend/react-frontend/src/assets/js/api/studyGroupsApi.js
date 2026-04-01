@@ -80,3 +80,19 @@ export async function deleteStudyGroup(id) {
     method: "DELETE",
   });
 }
+
+export async function shareStudyGroupItems(id, payload) {
+  const response = await apiFetch(`/api/study-groups/${id}/shared-items`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return response.json();
+}
+
+export async function importStudyGroupItem(id, sharedItemId) {
+  const response = await apiFetch(`/api/study-groups/${id}/shared-items/${sharedItemId}/import`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+  return response.json();
+}

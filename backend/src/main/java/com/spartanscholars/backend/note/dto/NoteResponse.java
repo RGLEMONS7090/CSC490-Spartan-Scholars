@@ -10,6 +10,7 @@ public record NoteResponse(
         String fileName,
         String fileContentType,
         boolean hasAttachment,
+        boolean imported,
         Instant createdAt,
         Instant updatedAt
 ) {

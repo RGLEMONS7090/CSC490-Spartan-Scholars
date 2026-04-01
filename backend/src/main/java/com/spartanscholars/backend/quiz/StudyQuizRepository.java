@@ -13,6 +13,16 @@ public interface StudyQuizRepository extends JpaRepository<StudyQuiz, Long> {
 
     Optional<StudyQuiz> findByIdAndOwnerId(Long id, Long ownerId);
 
+    Optional<StudyQuiz> findByShareCode(String shareCode);
+
+    @EntityGraph(attributePaths = {"questions"})
+    Optional<StudyQuiz> findWithQuestionsByShareCode(String shareCode);
+
+    @EntityGraph(attributePaths = {"flashcards"})
+    Optional<StudyQuiz> findWithFlashcardsByShareCode(String shareCode);
+
+    boolean existsByShareCode(String shareCode);
+
     long countByOwnerId(Long ownerId);
 
     @EntityGraph(attributePaths = {"questions"})

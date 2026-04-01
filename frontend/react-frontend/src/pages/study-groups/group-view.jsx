@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { deleteStudyGroup, fetchStudyGroup, joinStudyGroup, sendStudyGroupMessage } from "../../assets/js/api/studyGroupsApi";
+import { apiFetch } from "../../assets/js/api/notesApi";
+import { deleteStudyGroup, fetchStudyGroup, importStudyGroupItem, joinStudyGroup, sendStudyGroupMessage, shareStudyGroupItems } from "../../assets/js/api/studyGroupsApi";
 
 const CHAT_POLL_INTERVAL_MS = 2000;
 
@@ -25,6 +26,13 @@ export default function StudyGroupView() {
   const [joining, setJoining] = useState(false);
   const [sending, setSending] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [sharingItems, setSharingItems] = useState(false);
+  const [importingItemId, setImportingItemId] = useState(null);
+  const [sharePickerOpen, setSharePickerOpen] = useState(false);
+  const [shareableNotes, setShareableNotes] = useState([]);
+  const [shareableQuizzes, setShareableQuizzes] = useState([]);
+  const [selectedNoteIds, setSelectedNoteIds] = useState([]);
+  const [selectedQuizIds, setSelectedQuizIds] = useState([]);
   const [error, setError] = useState("");
   const chatFeedRef = useRef(null);
   const latestMessageIdRef = useRef(null);
@@ -117,6 +125,64 @@ export default function StudyGroupView() {
     }
   }
 
+  async function openSharePicker() {
+    const nextOpen = !sharePickerOpen;
+    setSharePickerOpen(nextOpen);
+    if (!nextOpen) {
+      return;
+    }
+
+    try {
+      const [notesResponse, quizzesResponse] = await Promise.all([
+        apiFetch("/api/notes"),
+        apiFetch("/api/quizzes"),
+      ]);
+      const notes = await notesResponse.json();
+      const quizzes = await quizzesResponse.json();
+      setShareableNotes(notes);
+      setShareableQuizzes(quizzes.quizzes || []);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function handleShareItems(event) {
+    event.preventDefault();
+    setSharingItems(true);
+    setError("");
+    try {
+      const data = await shareStudyGroupItems(id, {
+        noteIds: selectedNoteIds,
+        quizIds: selectedQuizIds,
+      });
+      setGroup(data);
+      setSelectedNoteIds([]);
+      setSelectedQuizIds([]);
+      setSharePickerOpen(false);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSharingItems(false);
+    }
+  }
+
+  async function handleImportSharedItem(sharedItemId) {
+    setImportingItemId(sharedItemId);
+    setError("");
+    try {
+      const data = await importStudyGroupItem(id, sharedItemId);
+      setGroup(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setImportingItemId(null);
+    }
+  }
+
+  function toggleSelection(setter, value) {
+    setter((current) => current.includes(value) ? current.filter((item) => item !== value) : [...current, value]);
+  }
+
   if (!group) {
     return <main className="main main--groups"><p>{error || "Loading group..."}</p></main>;
   }
@@ -162,6 +228,52 @@ export default function StudyGroupView() {
               <span>{group.memberCount} members</span>
               <span>{group.joined ? "You are a member" : "Join to send messages"}</span>
             </div>
+            {group.joined && (
+              <div className="groupShareActions">
+                <button className="quizActionBtn quizActionBtn--secondary" type="button" onClick={openSharePicker}>
+                  {sharePickerOpen ? "Hide Share Picker" : "Share Your Quizzes / Notes to This Group"}
+                </button>
+              </div>
+            )}
+            {group.joined && sharePickerOpen && (
+              <form className="groupSharePanel" onSubmit={handleShareItems}>
+                <div className="groupSharePanel__lists">
+                  <div>
+                    <h3>My Notes</h3>
+                    <div className="groupSharePanel__options">
+                      {shareableNotes.map((note) => (
+                        <label key={note.id} className="groupShareOption">
+                          <input
+                            type="checkbox"
+                            checked={selectedNoteIds.includes(note.id)}
+                            onChange={() => toggleSelection(setSelectedNoteIds, note.id)}
+                          />
+                          <span>{note.title}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <h3>My Quizzes</h3>
+                    <div className="groupSharePanel__options">
+                      {shareableQuizzes.map((quiz) => (
+                        <label key={quiz.id} className="groupShareOption">
+                          <input
+                            type="checkbox"
+                            checked={selectedQuizIds.includes(quiz.id)}
+                            onChange={() => toggleSelection(setSelectedQuizIds, quiz.id)}
+                          />
+                          <span>{quiz.title}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <button className="quizActionBtn quizActionBtn--primary" type="submit" disabled={sharingItems}>
+                  {sharingItems ? "Sharing..." : "Share Selected Items"}
+                </button>
+              </form>
+            )}
           </aside>
 
           <section className="groupChatCard">
@@ -169,6 +281,38 @@ export default function StudyGroupView() {
               <h2>Group Chat</h2>
               <p>Use this chatroom to coordinate study sessions and ask quick questions.</p>
             </div>
+
+            {group.joined && (
+              <section className="groupSharedLibrary">
+                <div className="groupChatCard__header">
+                  <h2>Import from Study Group</h2>
+                  <p>Browse all notes and quizzes shared to this group and import only what you want.</p>
+                </div>
+                <div className="groupSharedLibrary__list">
+                  {group.sharedItems?.length ? group.sharedItems.map((item) => (
+                    <article key={item.id} className="groupSharedItem">
+                      <div>
+                        <div className="quizCard__tagRow">
+                          <span className="quizCard__tag">{item.itemType === "NOTE" ? "Note" : "Quiz"}</span>
+                        </div>
+                        <h3>{item.title}</h3>
+                        <p>Shared by {item.sharedByName}</p>
+                      </div>
+                      <button
+                        className="quizActionBtn quizActionBtn--secondary"
+                        type="button"
+                        onClick={() => handleImportSharedItem(item.id)}
+                        disabled={importingItemId === item.id}
+                      >
+                        {importingItemId === item.id ? "Importing..." : `Import ${item.itemType === "NOTE" ? "Note" : "Quiz"}`}
+                      </button>
+                    </article>
+                  )) : (
+                    <p className="groupChatFeed__empty">No shared notes or quizzes yet.</p>
+                  )}
+                </div>
+              </section>
+            )}
 
             <div className="groupChatFeed" ref={chatFeedRef}>
               {group.messages.length === 0 && (

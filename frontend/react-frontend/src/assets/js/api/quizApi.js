@@ -101,3 +101,19 @@ export async function deleteQuiz(id) {
     method: "DELETE",
   });
 }
+
+export async function createQuizShare(id) {
+  const response = await apiFetch(`/api/quizzes/${id}/share`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+  return response.json();
+}
+
+export async function importQuizByPassword(password) {
+  const response = await apiFetch("/api/quizzes/import", {
+    method: "POST",
+    body: JSON.stringify({ password }),
+  });
+  return response.json();
+}

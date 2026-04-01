@@ -1,9 +1,15 @@
 package com.spartanscholars.backend.studygroup;
 
+import com.spartanscholars.backend.note.Note;
+import com.spartanscholars.backend.note.NoteService;
+import com.spartanscholars.backend.quiz.QuizService;
+import com.spartanscholars.backend.quiz.StudyQuiz;
 import com.spartanscholars.backend.studygroup.dto.CreateStudyGroupMessageRequest;
 import com.spartanscholars.backend.studygroup.dto.CreateStudyGroupRequest;
+import com.spartanscholars.backend.studygroup.dto.CreateStudyGroupShareRequest;
 import com.spartanscholars.backend.studygroup.dto.StudyGroupDetailResponse;
 import com.spartanscholars.backend.studygroup.dto.StudyGroupMessageResponse;
+import com.spartanscholars.backend.studygroup.dto.StudyGroupSharedItemResponse;
 import com.spartanscholars.backend.studygroup.dto.StudyGroupSummaryResponse;
 import com.spartanscholars.backend.user.User;
 import java.util.HashMap;
@@ -21,15 +27,24 @@ public class StudyGroupService {
     private final StudyGroupRepository studyGroupRepository;
     private final StudyGroupMemberRepository memberRepository;
     private final StudyGroupMessageRepository messageRepository;
+    private final StudyGroupSharedItemRepository sharedItemRepository;
+    private final NoteService noteService;
+    private final QuizService quizService;
 
     public StudyGroupService(
             StudyGroupRepository studyGroupRepository,
             StudyGroupMemberRepository memberRepository,
-            StudyGroupMessageRepository messageRepository
+            StudyGroupMessageRepository messageRepository,
+            StudyGroupSharedItemRepository sharedItemRepository,
+            NoteService noteService,
+            QuizService quizService
     ) {
         this.studyGroupRepository = studyGroupRepository;
         this.memberRepository = memberRepository;
         this.messageRepository = messageRepository;
+        this.sharedItemRepository = sharedItemRepository;
+        this.noteService = noteService;
+        this.quizService = quizService;
     }
 
     @Transactional(readOnly = true)
@@ -84,7 +99,7 @@ public class StudyGroupService {
 
         StudyGroup saved = studyGroupRepository.save(group);
         joinInternal(saved, authenticated);
-        return buildDetailResponse(saved, authenticated, true, List.of(), 1L);
+        return buildDetailResponse(saved, authenticated, true, List.of(), List.of(), 1L);
     }
 
     @Transactional(readOnly = true)
@@ -101,7 +116,12 @@ public class StudyGroupService {
                         message.getAuthor().getId().equals(authenticated.getId())
                 ))
                 .toList();
-        return buildDetailResponse(group, authenticated, joined, messages, memberRepository.countByGroupId(id));
+        List<StudyGroupSharedItemResponse> sharedItems = joined
+                ? sharedItemRepository.findByGroupIdOrderByCreatedAtDesc(id).stream()
+                        .map(this::toSharedItemResponse)
+                        .toList()
+                : List.of();
+        return buildDetailResponse(group, authenticated, joined, messages, sharedItems, memberRepository.countByGroupId(id));
     }
 
     @Transactional
@@ -145,6 +165,69 @@ public class StudyGroupService {
         studyGroupRepository.delete(group);
     }
 
+    @Transactional
+    public StudyGroupDetailResponse shareItems(User user, Long id, CreateStudyGroupShareRequest request) {
+        User authenticated = requireUser(user);
+        StudyGroup group = findGroup(id);
+        requireMembership(group.getId(), authenticated);
+
+        boolean sharedAnything = false;
+        for (Long noteId : request.noteIds() == null ? List.<Long>of() : request.noteIds()) {
+            Note note = noteService.findOwnedNoteEntity(authenticated, noteId);
+            StudyGroupSharedItem item = new StudyGroupSharedItem();
+            item.setGroup(group);
+            item.setSharedBy(authenticated);
+            item.setItemType(StudyGroupSharedItemType.NOTE);
+            item.setNote(note);
+            item.setTitle(note.getTitle());
+            sharedItemRepository.save(item);
+            sharedAnything = true;
+        }
+        for (Long quizId : request.quizIds() == null ? List.<Long>of() : request.quizIds()) {
+            StudyQuiz quiz = quizService.findOwnedQuizEntity(authenticated, quizId);
+            StudyGroupSharedItem item = new StudyGroupSharedItem();
+            item.setGroup(group);
+            item.setSharedBy(authenticated);
+            item.setItemType(StudyGroupSharedItemType.QUIZ);
+            item.setQuiz(quiz);
+            item.setTitle(quiz.getTitle());
+            sharedItemRepository.save(item);
+            sharedAnything = true;
+        }
+
+        if (!sharedAnything) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Choose at least one note or quiz to share.");
+        }
+
+        return getById(authenticated, id);
+    }
+
+    @Transactional
+    public StudyGroupDetailResponse importSharedItem(User user, Long groupId, Long sharedItemId) {
+        User authenticated = requireUser(user);
+        StudyGroup group = findGroup(groupId);
+        requireMembership(group.getId(), authenticated);
+
+        StudyGroupSharedItem item = sharedItemRepository.findByIdAndGroupId(sharedItemId, groupId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Shared item not found."));
+
+        if (item.getItemType() == StudyGroupSharedItemType.NOTE) {
+            Note note = item.getNote();
+            if (note == null) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "This shared note is no longer available.");
+            }
+            noteService.importFromExisting(authenticated, note);
+        } else {
+            StudyQuiz quiz = item.getQuiz();
+            if (quiz == null) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "This shared quiz is no longer available.");
+            }
+            quizService.importFromExisting(authenticated, quiz);
+        }
+
+        return getById(authenticated, groupId);
+    }
+
     private void joinInternal(StudyGroup group, User user) {
         if (memberRepository.findByGroupIdAndUserId(group.getId(), user.getId()).isPresent()) {
             return;
@@ -161,6 +244,7 @@ public class StudyGroupService {
             User authenticated,
             boolean joined,
             List<StudyGroupMessageResponse> messages,
+            List<StudyGroupSharedItemResponse> sharedItems,
             long memberCount
     ) {
         return new StudyGroupDetailResponse(
@@ -172,7 +256,22 @@ public class StudyGroupService {
                 group.getOwner().getId().equals(authenticated.getId()),
                 memberCount,
                 joined,
-                messages
+                messages,
+                sharedItems
+        );
+    }
+
+    private StudyGroupSharedItemResponse toSharedItemResponse(StudyGroupSharedItem item) {
+        Long sourceItemId = item.getItemType() == StudyGroupSharedItemType.NOTE
+                ? (item.getNote() == null ? null : item.getNote().getId())
+                : (item.getQuiz() == null ? null : item.getQuiz().getId());
+        return new StudyGroupSharedItemResponse(
+                item.getId(),
+                item.getItemType(),
+                sourceItemId,
+                item.getTitle(),
+                item.getSharedBy().getName(),
+                item.getCreatedAt()
         );
     }
 
@@ -194,6 +293,12 @@ public class StudyGroupService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
         }
         return sanitized;
+    }
+
+    private void requireMembership(Long groupId, User user) {
+        if (!memberRepository.existsByGroupIdAndUserId(groupId, user.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Join the group before sharing or importing items.");
+        }
     }
 
     private String sanitize(String value) {

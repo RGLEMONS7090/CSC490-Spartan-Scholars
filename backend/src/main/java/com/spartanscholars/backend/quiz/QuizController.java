@@ -3,8 +3,10 @@ package com.spartanscholars.backend.quiz;
 import com.spartanscholars.backend.quiz.dto.CreateFlashcardQuizRequest;
 import com.spartanscholars.backend.quiz.dto.CreateTestQuizRequest;
 import com.spartanscholars.backend.quiz.dto.GenerateAiStudyMaterialRequest;
+import com.spartanscholars.backend.quiz.dto.ImportQuizRequest;
 import com.spartanscholars.backend.quiz.dto.QuizDetailResponse;
 import com.spartanscholars.backend.quiz.dto.QuizOverviewResponse;
+import com.spartanscholars.backend.quiz.dto.QuizShareResponse;
 import com.spartanscholars.backend.quiz.dto.QuizSubmissionRequest;
 import com.spartanscholars.backend.quiz.dto.QuizSubmissionResponse;
 import com.spartanscholars.backend.quiz.dto.QuizSummaryResponse;
@@ -100,5 +102,21 @@ public class QuizController {
     ) {
         quizService.deleteQuiz(user, id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/share")
+    public ResponseEntity<QuizShareResponse> shareQuiz(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(quizService.createShareCode(user, id));
+    }
+
+    @PostMapping("/import")
+    public ResponseEntity<QuizSummaryResponse> importQuiz(
+            @AuthenticationPrincipal User user,
+            @RequestBody ImportQuizRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(quizService.importByPassword(user, request));
     }
 }

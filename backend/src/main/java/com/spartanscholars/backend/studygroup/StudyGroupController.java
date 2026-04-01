@@ -2,6 +2,7 @@ package com.spartanscholars.backend.studygroup;
 
 import com.spartanscholars.backend.studygroup.dto.CreateStudyGroupMessageRequest;
 import com.spartanscholars.backend.studygroup.dto.CreateStudyGroupRequest;
+import com.spartanscholars.backend.studygroup.dto.CreateStudyGroupShareRequest;
 import com.spartanscholars.backend.studygroup.dto.StudyGroupDetailResponse;
 import com.spartanscholars.backend.studygroup.dto.StudyGroupMessageResponse;
 import com.spartanscholars.backend.studygroup.dto.StudyGroupSummaryResponse;
@@ -68,6 +69,24 @@ public class StudyGroupController {
             @RequestBody CreateStudyGroupMessageRequest request
     ) {
         return ResponseEntity.status(HttpStatus.CREATED).body(studyGroupService.addMessage(user, id, request));
+    }
+
+    @PostMapping("/{id}/shared-items")
+    public ResponseEntity<StudyGroupDetailResponse> shareItems(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long id,
+            @RequestBody CreateStudyGroupShareRequest request
+    ) {
+        return ResponseEntity.ok(studyGroupService.shareItems(user, id, request));
+    }
+
+    @PostMapping("/{id}/shared-items/{sharedItemId}/import")
+    public ResponseEntity<StudyGroupDetailResponse> importSharedItem(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long id,
+            @PathVariable Long sharedItemId
+    ) {
+        return ResponseEntity.ok(studyGroupService.importSharedItem(user, id, sharedItemId));
     }
 
     @DeleteMapping("/{id}")

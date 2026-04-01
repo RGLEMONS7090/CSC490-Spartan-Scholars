@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { deleteQuiz, fetchQuizOverview } from "../assets/js/api/quizApi";
+import { createQuizShare, deleteQuiz, fetchQuizOverview, importQuizByPassword } from "../assets/js/api/quizApi";
 
 export default function TakeQuizzes() {
   const [overview, setOverview] = useState({
@@ -12,6 +12,8 @@ export default function TakeQuizzes() {
   });
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState(null);
+  const [importPassword, setImportPassword] = useState("");
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => {
     async function loadOverview() {
@@ -59,6 +61,22 @@ export default function TakeQuizzes() {
     }
   }
 
+  async function handleImportQuiz(event) {
+    event.preventDefault();
+    setImporting(true);
+    setError("");
+    try {
+      await importQuizByPassword(importPassword.trim());
+      setImportPassword("");
+      const data = await fetchQuizOverview();
+      setOverview(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setImporting(false);
+    }
+  }
+
   return (
     <>
       <Helmet>
@@ -75,9 +93,23 @@ export default function TakeQuizzes() {
             </div>
           </div>
 
-          <Link className="quizCreateBtn" to="/take-quizzes/create">
-            Create Quiz
-          </Link>
+          <div className="notesHeader__actions">
+            <form className="shareToolbar" onSubmit={handleImportQuiz}>
+              <input
+                className="shareToolbar__input"
+                type="text"
+                value={importPassword}
+                onChange={(event) => setImportPassword(event.target.value)}
+                placeholder="Paste quiz password"
+              />
+              <button className="quizActionBtn quizActionBtn--secondary" type="submit" disabled={importing}>
+                {importing ? "Importing..." : "Import Quiz by Password"}
+              </button>
+            </form>
+            <Link className="quizCreateBtn" to="/take-quizzes/create">
+              Create Quiz
+            </Link>
+          </div>
         </section>
 
         <section className="quizStats">
@@ -104,45 +136,7 @@ export default function TakeQuizzes() {
 
         <section className="quizGrid">
           {overview.quizzes.map((quiz) => (
-            <article key={quiz.id} className="quizCard">
-              <div className="quizCard__top">
-                <span className="quizCard__tag">{quiz.type === "TEST" ? "Test" : "Flashcard"}</span>
-                <span className={`quizCard__level ${quiz.type === "TEST" ? "quizCard__level--medium" : "quizCard__level--easy"}`}>
-                  {quiz.type === "TEST" ? "Test" : "Flashcard"}
-                </span>
-              </div>
-
-              <h2>{quiz.title}</h2>
-
-              <p className="quizCard__meta">
-                {quiz.itemCount} {quiz.type === "TEST" ? "questions" : "cards"}
-              </p>
-
-              {quiz.latestScore != null && (
-                <div className="quizCard__scoreRow">
-                  <span>Your Score:</span>
-                  <strong>{quiz.latestScore}%</strong>
-                </div>
-              )}
-
-              <div className="quizCard__actions">
-                <Link
-                  className={`quizActionBtn ${quiz.completed ? "quizActionBtn--secondary" : "quizActionBtn--primary"}`}
-                  to={quiz.type === "TEST" ? `/take-quizzes/${quiz.id}` : `/take-quizzes/${quiz.id}/flashcards`}
-                >
-                  {quiz.completed ? "Retake" : "Start"} {quiz.type === "TEST" ? "Quiz" : "Flashcards"}
-                </Link>
-
-                <button
-                  type="button"
-                  className="quizActionBtn quizActionBtn--danger"
-                  onClick={() => handleDeleteQuiz(quiz.id)}
-                  disabled={deletingId === quiz.id}
-                >
-                  {deletingId === quiz.id ? "Deleting..." : "Delete"}
-                </button>
-              </div>
-            </article>
+            <QuizCard key={quiz.id} quiz={quiz} deletingId={deletingId} onDelete={handleDeleteQuiz} />
           ))}
 
           {overview.quizzes.length === 0 && (
@@ -156,5 +150,96 @@ export default function TakeQuizzes() {
         {error && <p className="quizError">{error}</p>}
       </main>
     </>
+  );
+}
+
+function QuizCard({ quiz, deletingId, onDelete }) {
+  const [sharing, setSharing] = useState(false);
+  const [sharePassword, setSharePassword] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleShare() {
+    setSharing(true);
+    setError("");
+    try {
+      const data = await createQuizShare(quiz.id);
+      setSharePassword(data.password);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSharing(false);
+    }
+  }
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(sharePassword);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1500);
+  }
+
+  return (
+    <article className="quizCard">
+      <div className="quizCard__top">
+        <div className="quizCard__tagRow">
+          <span className="quizCard__tag">{quiz.type === "TEST" ? "Test" : "Flashcard"}</span>
+          {quiz.imported && <span className="sharePill">Imported</span>}
+        </div>
+        <span className={`quizCard__level ${quiz.type === "TEST" ? "quizCard__level--medium" : "quizCard__level--easy"}`}>
+          {quiz.type === "TEST" ? "Test" : "Flashcard"}
+        </span>
+      </div>
+
+      <h2>{quiz.title}</h2>
+
+      <p className="quizCard__meta">
+        {quiz.itemCount} {quiz.type === "TEST" ? "questions" : "cards"}
+      </p>
+
+      {quiz.latestScore != null && (
+        <div className="quizCard__scoreRow">
+          <span>Your Score:</span>
+          <strong>{quiz.latestScore}%</strong>
+        </div>
+      )}
+
+      {sharePassword && (
+        <div className="sharePanel">
+          <span className="sharePanel__label">Share password</span>
+          <div className="sharePanel__row">
+            <code className="sharePanel__code">{sharePassword}</code>
+            <button className="quizActionBtn quizActionBtn--secondary" type="button" onClick={handleCopy}>
+              {copied ? "Copied" : "Copy"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {error && <p className="quizError">{error}</p>}
+
+      <div className="quizCard__actions">
+        <div className="quizCard__actionsMain">
+          <Link
+            className={`quizActionBtn ${quiz.completed ? "quizActionBtn--secondary" : "quizActionBtn--primary"}`}
+            to={quiz.type === "TEST" ? `/take-quizzes/${quiz.id}` : `/take-quizzes/${quiz.id}/flashcards`}
+          >
+            {quiz.completed ? "Retake" : "Start"} {quiz.type === "TEST" ? "Quiz" : "Flashcards"}
+          </Link>
+
+          <button type="button" className="quizActionBtn quizActionBtn--secondary" onClick={handleShare} disabled={sharing}>
+            {sharing ? "Sharing..." : "Share Quiz"}
+          </button>
+        </div>
+
+        <button
+          type="button"
+          className="quizActionBtn quizActionBtn--danger quizCard__deleteBtn"
+          onClick={() => onDelete(quiz.id)}
+          disabled={deletingId === quiz.id}
+        >
+          {deletingId === quiz.id ? "Deleting..." : "Delete"}
+        </button>
+      </div>
+    </article>
   );
 }

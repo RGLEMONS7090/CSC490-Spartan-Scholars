@@ -6,15 +6,18 @@ import com.spartanscholars.backend.quiz.dto.CreateTestQuizRequest;
 import com.spartanscholars.backend.quiz.dto.FlashcardRequest;
 import com.spartanscholars.backend.quiz.dto.GenerateAiStudyMaterialRequest;
 import com.spartanscholars.backend.quiz.dto.FlashcardResponse;
+import com.spartanscholars.backend.quiz.dto.ImportQuizRequest;
 import com.spartanscholars.backend.quiz.dto.QuizDetailResponse;
 import com.spartanscholars.backend.quiz.dto.QuizIncorrectAnswerResponse;
 import com.spartanscholars.backend.quiz.dto.QuizOverviewResponse;
 import com.spartanscholars.backend.quiz.dto.QuizQuestionRequest;
 import com.spartanscholars.backend.quiz.dto.QuizQuestionResponse;
+import com.spartanscholars.backend.quiz.dto.QuizShareResponse;
 import com.spartanscholars.backend.quiz.dto.QuizSubmissionRequest;
 import com.spartanscholars.backend.quiz.dto.QuizSubmissionResponse;
 import com.spartanscholars.backend.quiz.dto.QuizSummaryResponse;
 import com.spartanscholars.backend.user.User;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,10 +30,13 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class QuizService {
+    private static final String SHARE_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    private static final int SHARE_CODE_LENGTH = 10;
 
     private final StudyQuizRepository studyQuizRepository;
     private final QuizAttemptRepository quizAttemptRepository;
     private final AiService aiService;
+    private final SecureRandom secureRandom = new SecureRandom();
 
     public QuizService(
             StudyQuizRepository studyQuizRepository,
@@ -66,6 +72,7 @@ public class QuizService {
                             quiz.getType(),
                             itemCount,
                             latest != null,
+                            quiz.isImported(),
                             latest == null ? null : latest.getScore(),
                             quiz.getUpdatedAt()
                     );
@@ -96,6 +103,7 @@ public class QuizService {
         quiz.setOwner(authenticated);
         quiz.setTitle(title);
         quiz.setType(QuizType.TEST);
+        quiz.setImported(false);
 
         int index = 0;
         for (QuizQuestionRequest questionRequest : request.questions()) {
@@ -126,7 +134,7 @@ public class QuizService {
         }
 
         StudyQuiz saved = studyQuizRepository.save(quiz);
-        return new QuizSummaryResponse(saved.getId(), saved.getTitle(), saved.getType(), saved.getQuestions().size(), false, null, saved.getUpdatedAt());
+        return new QuizSummaryResponse(saved.getId(), saved.getTitle(), saved.getType(), saved.getQuestions().size(), false, saved.isImported(), null, saved.getUpdatedAt());
     }
 
     @Transactional
@@ -144,6 +152,7 @@ public class QuizService {
         quiz.setOwner(authenticated);
         quiz.setTitle(title);
         quiz.setType(QuizType.FLASHCARD);
+        quiz.setImported(false);
 
         int index = 0;
         for (FlashcardRequest cardRequest : request.cards()) {
@@ -156,7 +165,7 @@ public class QuizService {
         }
 
         StudyQuiz saved = studyQuizRepository.save(quiz);
-        return new QuizSummaryResponse(saved.getId(), saved.getTitle(), saved.getType(), saved.getFlashcards().size(), false, null, saved.getUpdatedAt());
+        return new QuizSummaryResponse(saved.getId(), saved.getTitle(), saved.getType(), saved.getFlashcards().size(), false, saved.isImported(), null, saved.getUpdatedAt());
     }
 
     @Transactional
@@ -261,6 +270,45 @@ public class QuizService {
         studyQuizRepository.delete(quiz);
     }
 
+    @Transactional
+    public QuizShareResponse createShareCode(User user, Long quizId) {
+        StudyQuiz quiz = findOwnedQuiz(user, quizId);
+        if (quiz.getShareCode() == null || quiz.getShareCode().isBlank()) {
+            quiz.setShareCode(generateUniqueShareCode());
+            studyQuizRepository.save(quiz);
+        }
+        return new QuizShareResponse(quiz.getId(), quiz.getTitle(), quiz.getShareCode());
+    }
+
+    @Transactional
+    public QuizSummaryResponse importByPassword(User user, ImportQuizRequest request) {
+        User authenticated = requireUser(user);
+        String password = requiredText(request.password(), "Share password is required.");
+        StudyQuiz source = findSharedQuiz(password);
+        if (source.getOwner().getId().equals(authenticated.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You already own this quiz.");
+        }
+        StudyQuiz imported = cloneQuiz(source, authenticated);
+        StudyQuiz saved = studyQuizRepository.save(imported);
+        return new QuizSummaryResponse(saved.getId(), saved.getTitle(), saved.getType(), itemCount(saved), false, true, null, saved.getUpdatedAt());
+    }
+
+    @Transactional(readOnly = true)
+    public StudyQuiz findOwnedQuizEntity(User user, Long quizId) {
+        return findOwnedQuiz(user, quizId);
+    }
+
+    @Transactional
+    public QuizSummaryResponse importFromExisting(User user, StudyQuiz source) {
+        User authenticated = requireUser(user);
+        if (source.getOwner().getId().equals(authenticated.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You already own this quiz.");
+        }
+        StudyQuiz imported = cloneQuiz(source, authenticated);
+        StudyQuiz saved = studyQuizRepository.save(imported);
+        return new QuizSummaryResponse(saved.getId(), saved.getTitle(), saved.getType(), itemCount(saved), false, true, null, saved.getUpdatedAt());
+    }
+
     private StudyQuiz findOwnedQuiz(User user, Long quizId) {
         User authenticated = requireUser(user);
         StudyQuiz quiz = studyQuizRepository.findByIdAndOwnerId(quizId, authenticated.getId())
@@ -273,6 +321,17 @@ public class QuizService {
 
         return studyQuizRepository.findWithFlashcardsByIdAndOwnerId(quizId, authenticated.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Quiz not found."));
+    }
+
+    private StudyQuiz findSharedQuiz(String shareCode) {
+        StudyQuiz quiz = studyQuizRepository.findByShareCode(shareCode)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Shared quiz not found."));
+        if (quiz.getType() == QuizType.TEST) {
+            return studyQuizRepository.findWithQuestionsByShareCode(shareCode)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Shared quiz not found."));
+        }
+        return studyQuizRepository.findWithFlashcardsByShareCode(shareCode)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Shared quiz not found."));
     }
 
     private User requireUser(User user) {
@@ -288,6 +347,62 @@ public class QuizService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
         }
         return sanitized;
+    }
+
+    private StudyQuiz cloneQuiz(StudyQuiz source, User owner) {
+        StudyQuiz imported = new StudyQuiz();
+        imported.setOwner(owner);
+        imported.setTitle(source.getTitle());
+        imported.setType(source.getType());
+        imported.setImported(true);
+        imported.setShareCode(null);
+
+        if (source.getType() == QuizType.TEST) {
+            for (QuizQuestion sourceQuestion : source.getQuestions()) {
+                QuizQuestion question = new QuizQuestion();
+                question.setQuiz(imported);
+                question.setPrompt(sourceQuestion.getPrompt());
+                question.setResponseType(sourceQuestion.getResponseType());
+                question.setOptionA(sourceQuestion.getOptionA());
+                question.setOptionB(sourceQuestion.getOptionB());
+                question.setOptionC(sourceQuestion.getOptionC());
+                question.setOptionD(sourceQuestion.getOptionD());
+                question.setCorrectAnswer(sourceQuestion.getCorrectAnswer());
+                question.setPositionIndex(sourceQuestion.getPositionIndex());
+                imported.getQuestions().add(question);
+            }
+        } else {
+            for (Flashcard sourceCard : source.getFlashcards()) {
+                Flashcard card = new Flashcard();
+                card.setQuiz(imported);
+                card.setFrontText(sourceCard.getFrontText());
+                card.setBackText(sourceCard.getBackText());
+                card.setPositionIndex(sourceCard.getPositionIndex());
+                imported.getFlashcards().add(card);
+            }
+        }
+
+        return imported;
+    }
+
+    private int itemCount(StudyQuiz quiz) {
+        return quiz.getType() == QuizType.TEST ? quiz.getQuestions().size() : quiz.getFlashcards().size();
+    }
+
+    private String generateUniqueShareCode() {
+        String code = randomShareCode();
+        while (studyQuizRepository.existsByShareCode(code)) {
+            code = randomShareCode();
+        }
+        return code;
+    }
+
+    private String randomShareCode() {
+        StringBuilder builder = new StringBuilder(SHARE_CODE_LENGTH);
+        for (int i = 0; i < SHARE_CODE_LENGTH; i++) {
+            builder.append(SHARE_CODE_ALPHABET.charAt(secureRandom.nextInt(SHARE_CODE_ALPHABET.length())));
+        }
+        return builder.toString();
     }
 
     private String sanitize(String value) {
