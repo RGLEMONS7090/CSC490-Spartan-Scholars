@@ -94,6 +94,20 @@ public class AiService {
             Keep the summary short and factual.
             The university should be UNC Greensboro or University of North Carolina Greensboro when present.
             """;
+    private static final String DEGREE_AUDIT_NORMALIZATION_INSTRUCTIONS = """
+            You are Spartan Scholars AI, cleaning and normalizing a Degree Works audit that has already been partially parsed by a deterministic parser.
+            Use the parser output as the starting point, but correct misclassified items by reading the audit text.
+            Return only valid JSON matching the provided schema.
+            Rules:
+            - Preserve exact course codes from the audit.
+            - A course in progress must appear only in inProgressCourses and inProgressCourseDetails.
+            - Exact single-course requirements belong in remainingCourses and remainingCourseDetails.
+            - Requirement areas like science options or elective buckets belong in remainingRequirementGroups, not remainingCourses.
+            - Keep completed requirement areas like foreign language or math out of remainingRequirements unless the audit explicitly says they are still needed.
+            - Do not hallucinate courses, options, concentrations, or minors.
+            - Prefer cleaner labels for requirement groups, such as "1 Science class" or "3 Credits in CSC electives at 300 level or above".
+            - Keep the summary short and factual.
+            """;
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
@@ -281,7 +295,13 @@ public class AiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The uploaded PDF did not contain readable text.");
         }
 
-        return buildStructuredDegreeAuditParse(sanitizedText);
+        DegreeAuditParseResponse parserResult = buildStructuredDegreeAuditParse(sanitizedText);
+        if (apiKey.isBlank()) {
+            return parserResult;
+        }
+
+        DegreeAuditParseResponse aiNormalized = normalizeDegreeAuditWithAi(sanitizedText, parserResult);
+        return aiNormalized == null ? parserResult : aiNormalized;
     }
 
     private JsonNode executeResponseRequest(Map<String, Object> payload) {
@@ -542,10 +562,11 @@ public class AiService {
         String major = extractAfterLabel(auditText, "Major");
         String concentration = extractAfterLabel(auditText, "Concentration");
         String minor = extractAfterLabel(auditText, "Minor");
-
         List<String> lines = normalizeAuditLines(auditText);
+        Map<String, String> titleMap = extractCourseTitleMap(lines);
         List<String> inProgressCourses = extractInProgressCourses(lines);
         List<DegreeAuditRequirementGroup> remainingRequirementGroups = extractStructuredRequirementGroups(lines);
+        remainingRequirementGroups = enrichRequirementGroups(remainingRequirementGroups, titleMap);
         List<String> remainingCourses = extractExactRemainingCourses(lines, inProgressCourses, remainingRequirementGroups);
         List<String> remainingRequirements = extractRequirementSummaries(lines, remainingRequirementGroups, remainingCourses);
         List<String> completedCourses = extractCompletedCourses(lines, inProgressCourses, remainingCourses, remainingRequirementGroups);
@@ -569,6 +590,325 @@ public class AiService {
                 remainingRequirementGroups,
                 summaryMessage
         );
+    }
+
+    private DegreeAuditParseResponse normalizeDegreeAuditWithAi(String auditText, DegreeAuditParseResponse parserResult) {
+        try {
+            String parserJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(parserResult);
+
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("model", model);
+            payload.put("instructions", DEGREE_AUDIT_NORMALIZATION_INSTRUCTIONS);
+            payload.put("input", List.of(Map.of(
+                    "role", "user",
+                    "content", """
+                            Degree Works audit text:
+
+                            %s
+
+                            Deterministic parser output:
+
+                            %s
+                            """.formatted(auditText, parserJson)
+            )));
+            payload.put("max_output_tokens", 2400);
+            payload.put("text", Map.of("format", buildDegreeAuditFormat()));
+
+            JsonNode responseBody = executeResponseRequest(payload);
+            String json = extractReply(responseBody);
+            if (json == null) {
+                return null;
+            }
+
+            DegreeAuditParseResponse aiResult = objectMapper.readValue(json, DegreeAuditParseResponse.class);
+            return mergeDegreeAuditParses(auditText, parserResult, aiResult);
+        } catch (Exception exception) {
+            return null;
+        }
+    }
+
+    private DegreeAuditParseResponse mergeDegreeAuditParses(
+            String auditText,
+            DegreeAuditParseResponse parserResult,
+            DegreeAuditParseResponse aiResult
+    ) {
+        Set<String> auditCodes = new LinkedHashSet<>(findCourseCodes(auditText));
+        Map<String, String> titleMap = extractCourseTitleMap(normalizeAuditLines(auditText));
+
+        List<String> inProgressCourses = sanitizeCourseCodes(
+                preferCourseList(aiResult.inProgressCourses(), parserResult.inProgressCourses()),
+                auditCodes
+        );
+        List<String> remainingCourses = sanitizeCourseCodes(
+                preferCourseList(aiResult.remainingCourses(), parserResult.remainingCourses()),
+                auditCodes
+        );
+        remainingCourses.removeIf(inProgressCourses::contains);
+
+        List<DegreeAuditRequirementGroup> requirementGroups =
+                mergeAndSanitizeRequirementGroups(
+                        aiResult.remainingRequirementGroups(),
+                        parserResult.remainingRequirementGroups(),
+                        auditCodes,
+                        titleMap
+                );
+        Set<String> groupedOptionCodes = new LinkedHashSet<>();
+        requirementGroups.forEach(group -> group.options().forEach(option -> groupedOptionCodes.addAll(findCourseCodes(option))));
+        remainingCourses.removeIf(groupedOptionCodes::contains);
+
+        List<String> completedCourses = sanitizeCourseCodes(
+                preferCourseList(aiResult.completedCourses(), parserResult.completedCourses()),
+                auditCodes
+        );
+        completedCourses.removeIf(inProgressCourses::contains);
+        completedCourses.removeIf(remainingCourses::contains);
+
+        List<DegreeAuditCourseDetail> completedDetails = mergeCourseDetails(
+                completedCourses,
+                parserResult.completedCourseDetails(),
+                aiResult.completedCourseDetails()
+        );
+        List<DegreeAuditCourseDetail> inProgressDetails = mergeCourseDetails(
+                inProgressCourses,
+                parserResult.inProgressCourseDetails(),
+                aiResult.inProgressCourseDetails()
+        );
+        List<DegreeAuditCourseDetail> remainingDetails = mergeCourseDetails(
+                remainingCourses,
+                parserResult.remainingCourseDetails(),
+                aiResult.remainingCourseDetails()
+        );
+        List<String> remainingRequirements = sanitizeStringList(
+                preferStringList(aiResult.remainingRequirements(), parserResult.remainingRequirements())
+        );
+
+        return new DegreeAuditParseResponse(
+                preferText(aiResult.university(), parserResult.university()),
+                preferText(aiResult.degreeName(), parserResult.degreeName()),
+                preferText(aiResult.major(), parserResult.major()),
+                preferText(aiResult.concentration(), parserResult.concentration()),
+                preferText(aiResult.minor(), parserResult.minor()),
+                completedCourses,
+                inProgressCourses,
+                remainingCourses,
+                completedDetails,
+                inProgressDetails,
+                remainingDetails,
+                remainingRequirements,
+                requirementGroups,
+                "Normalized with AI using parsed Degree Works sections."
+        );
+    }
+
+    private List<String> preferCourseList(List<String> preferred, List<String> fallback) {
+        return preferred != null && !preferred.isEmpty() ? preferred : fallback;
+    }
+
+    private List<String> preferStringList(List<String> preferred, List<String> fallback) {
+        return preferred != null && !preferred.isEmpty() ? preferred : fallback;
+    }
+
+    private String preferText(String preferred, String fallback) {
+        String sanitizedPreferred = sanitize(preferred);
+        return sanitizedPreferred != null ? sanitizedPreferred : defaultString(fallback);
+    }
+
+    private List<String> sanitizeCourseCodes(List<String> values, Set<String> allowedCodes) {
+        List<String> results = new ArrayList<>();
+        Set<String> seen = new LinkedHashSet<>();
+        for (String value : values == null ? List.<String>of() : values) {
+            String code = sanitize(normalizeCourseCode(value));
+            if (code == null || !allowedCodes.contains(code) || !seen.add(code)) {
+                continue;
+            }
+            results.add(code);
+        }
+        return results;
+    }
+
+    private String normalizeCourseCode(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", " ").replaceAll("\\s+", " ").trim();
+        Matcher matcher = Pattern.compile("^([A-Z]{2,4})\\s?(\\d{3}[A-Z]?)$").matcher(normalized);
+        if (!matcher.find()) {
+            return normalized;
+        }
+        return matcher.group(1) + " " + matcher.group(2);
+    }
+
+    private List<DegreeAuditCourseDetail> mergeCourseDetails(
+            List<String> codes,
+            List<DegreeAuditCourseDetail> parserDetails,
+            List<DegreeAuditCourseDetail> aiDetails
+    ) {
+        Map<String, DegreeAuditCourseDetail> parserMap = mapCourseDetails(parserDetails);
+        Map<String, DegreeAuditCourseDetail> aiMap = mapCourseDetails(aiDetails);
+        List<DegreeAuditCourseDetail> merged = new ArrayList<>();
+
+        for (String code : codes) {
+            DegreeAuditCourseDetail aiDetail = aiMap.get(code);
+            DegreeAuditCourseDetail parserDetail = parserMap.get(code);
+            String title = aiDetail != null && sanitize(aiDetail.title()) != null
+                    ? aiDetail.title().trim()
+                    : parserDetail != null ? defaultString(parserDetail.title()) : "";
+            merged.add(new DegreeAuditCourseDetail(code, title));
+        }
+
+        return merged;
+    }
+
+    private Map<String, DegreeAuditCourseDetail> mapCourseDetails(List<DegreeAuditCourseDetail> details) {
+        Map<String, DegreeAuditCourseDetail> mapped = new LinkedHashMap<>();
+        for (DegreeAuditCourseDetail detail : details == null ? List.<DegreeAuditCourseDetail>of() : details) {
+            if (detail == null) {
+                continue;
+            }
+            String code = sanitize(normalizeCourseCode(detail.code()));
+            if (code == null) {
+                continue;
+            }
+            mapped.put(code, new DegreeAuditCourseDetail(code, defaultString(detail.title())));
+        }
+        return mapped;
+    }
+
+    private List<DegreeAuditRequirementGroup> mergeAndSanitizeRequirementGroups(
+            List<DegreeAuditRequirementGroup> preferred,
+            List<DegreeAuditRequirementGroup> fallback,
+            Set<String> auditCodes,
+            Map<String, String> titleMap
+    ) {
+        Map<String, DegreeAuditRequirementGroup> merged = new LinkedHashMap<>();
+        addRequirementGroupsToMap(merged, fallback, auditCodes, titleMap);
+        addRequirementGroupsToMap(merged, preferred, auditCodes, titleMap);
+        return new ArrayList<>(merged.values());
+    }
+
+    private void addRequirementGroupsToMap(
+            Map<String, DegreeAuditRequirementGroup> target,
+            List<DegreeAuditRequirementGroup> source,
+            Set<String> auditCodes,
+            Map<String, String> titleMap
+    ) {
+        for (DegreeAuditRequirementGroup group : source == null ? List.<DegreeAuditRequirementGroup>of() : source) {
+            if (group == null) {
+                continue;
+            }
+
+            String label = defaultString(group.label());
+            String type = defaultString(group.requirementType());
+            int countNeeded = group.countNeeded() <= 0 ? 1 : group.countNeeded();
+            String creditsNeeded = defaultString(group.creditsNeeded());
+            List<String> options = sanitizeRequirementOptions(group.options(), auditCodes, titleMap);
+            if (options.isEmpty()) {
+                continue;
+            }
+
+            String key = buildRequirementGroupKey(label, type, countNeeded, creditsNeeded);
+            DegreeAuditRequirementGroup existing = target.get(key);
+            if (existing == null) {
+                target.put(key, new DegreeAuditRequirementGroup(label, type, countNeeded, creditsNeeded, options));
+                continue;
+            }
+
+            List<String> mergedOptions = new ArrayList<>();
+            Set<String> seen = new LinkedHashSet<>();
+            for (String option : existing.options()) {
+                if (seen.add(option)) {
+                    mergedOptions.add(option);
+                }
+            }
+            for (String option : options) {
+                if (seen.add(option)) {
+                    mergedOptions.add(option);
+                }
+            }
+
+            String betterLabel = label.length() > existing.label().length() ? label : existing.label();
+            String betterType = type.isBlank() ? existing.requirementType() : type;
+            String betterCredits = creditsNeeded.isBlank() ? existing.creditsNeeded() : creditsNeeded;
+            target.put(key, new DegreeAuditRequirementGroup(betterLabel, betterType, countNeeded, betterCredits, mergedOptions));
+        }
+    }
+
+    private String buildRequirementGroupKey(String label, String type, int countNeeded, String creditsNeeded) {
+        return normalizeRequirementKey(label) + "|" + type + "|" + countNeeded + "|" + creditsNeeded;
+    }
+
+    private String normalizeRequirementKey(String value) {
+        return defaultString(value).toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", " ").trim();
+    }
+
+    private List<DegreeAuditRequirementGroup> enrichRequirementGroups(
+            List<DegreeAuditRequirementGroup> groups,
+            Map<String, String> titleMap
+    ) {
+        List<DegreeAuditRequirementGroup> enriched = new ArrayList<>();
+        Set<String> allowedCodes = new LinkedHashSet<>(titleMap.keySet());
+        for (DegreeAuditRequirementGroup group : groups == null ? List.<DegreeAuditRequirementGroup>of() : groups) {
+            enriched.add(new DegreeAuditRequirementGroup(
+                    defaultString(group.label()),
+                    defaultString(group.requirementType()),
+                    group.countNeeded() <= 0 ? 1 : group.countNeeded(),
+                    defaultString(group.creditsNeeded()),
+                    sanitizeRequirementOptions(group.options(), allowedCodes, titleMap)
+            ));
+        }
+        return enriched;
+    }
+
+    private List<String> sanitizeRequirementOptions(List<String> options, Set<String> auditCodes, Map<String, String> titleMap) {
+        List<String> sanitizedOptions = new ArrayList<>();
+        Set<String> seen = new LinkedHashSet<>();
+        for (String option : options == null ? List.<String>of() : options) {
+            String cleaned = sanitize(option);
+            if (cleaned == null) {
+                continue;
+            }
+
+            List<String> optionCodes = findCourseCodes(cleaned);
+            boolean allCodesInAudit = optionCodes.isEmpty() || optionCodes.stream().allMatch(auditCodes::contains);
+            if (allCodesInAudit) {
+                String enriched = enrichRequirementOption(cleaned, titleMap);
+                if (seen.add(enriched)) {
+                    sanitizedOptions.add(enriched);
+                }
+            }
+        }
+        return sanitizedOptions;
+    }
+
+    private String enrichRequirementOption(String option, Map<String, String> titleMap) {
+        List<String> codes = findCourseCodes(option);
+        if (codes.size() != 1) {
+            return option;
+        }
+
+        String code = codes.get(0);
+        String title = sanitize(titleMap.get(code));
+        if (title == null) {
+            return code;
+        }
+
+        if (option.equals(code) || !option.contains(" - ")) {
+            return code + " - " + title;
+        }
+
+        return option;
+    }
+
+    private List<String> sanitizeStringList(List<String> values) {
+        List<String> results = new ArrayList<>();
+        Set<String> seen = new LinkedHashSet<>();
+        for (String value : values == null ? List.<String>of() : values) {
+            String cleaned = sanitize(value);
+            if (cleaned != null && seen.add(cleaned)) {
+                results.add(cleaned);
+            }
+        }
+        return results;
     }
 
     private List<String> normalizeAuditLines(String auditText) {

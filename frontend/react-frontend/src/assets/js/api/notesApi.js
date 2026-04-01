@@ -32,6 +32,22 @@ export async function enhanceNoteWithAi(noteId) {
   });
   return response.json();
 }
+
+export async function createNoteShare(noteId) {
+  const response = await apiFetch(`/api/notes/${noteId}/share`, {
+    method: "POST",
+  });
+  return response.json();
+}
+
+export async function importNoteByPassword(password) {
+  const response = await apiFetch("/api/notes/import", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password }),
+  });
+  return response.json();
+}
         
   
   

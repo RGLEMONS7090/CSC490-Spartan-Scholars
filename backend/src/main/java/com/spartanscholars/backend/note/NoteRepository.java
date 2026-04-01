@@ -17,6 +17,7 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
                 n.category as category,
                 substring(coalesce(n.content, ''), 1, 240) as preview,
                 n.file_name as fileName,
+                n.imported as imported,
                 n.updated_at as updatedAt
             from notes n
             where n.user_id = :ownerId
@@ -25,6 +26,10 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
     List<NoteSummaryProjection> findSummariesByOwnerIdOrderByUpdatedAtDesc(Long ownerId);
 
     Optional<Note> findByIdAndOwnerId(Long id, Long ownerId);
+
+    Optional<Note> findByShareCode(String shareCode);
+
+    boolean existsByShareCode(String shareCode);
 
     long countByOwnerId(Long ownerId);
 

@@ -9,6 +9,7 @@ public record QuizSummaryResponse(
         QuizType type,
         int itemCount,
         boolean completed,
+        boolean imported,
         Integer latestScore,
         Instant updatedAt
 ) {

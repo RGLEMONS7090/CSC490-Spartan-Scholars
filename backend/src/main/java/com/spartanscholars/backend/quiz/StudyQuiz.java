@@ -45,6 +45,12 @@ public class StudyQuiz {
     @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Flashcard> flashcards = new ArrayList<>();
 
+    @Column(unique = true)
+    private String shareCode;
+
+    @Column(nullable = false)
+    private boolean imported;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -97,6 +103,22 @@ public class StudyQuiz {
 
     public List<Flashcard> getFlashcards() {
         return flashcards;
+    }
+
+    public String getShareCode() {
+        return shareCode;
+    }
+
+    public void setShareCode(String shareCode) {
+        this.shareCode = shareCode;
+    }
+
+    public boolean isImported() {
+        return imported;
+    }
+
+    public void setImported(boolean imported) {
+        this.imported = imported;
     }
 
     public Instant getCreatedAt() {

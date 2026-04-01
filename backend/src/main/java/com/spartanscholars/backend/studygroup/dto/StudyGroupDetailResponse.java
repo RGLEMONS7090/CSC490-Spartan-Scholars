@@ -11,6 +11,7 @@ public record StudyGroupDetailResponse(
         boolean owner,
         long memberCount,
         boolean joined,
-        List<StudyGroupMessageResponse> messages
+        List<StudyGroupMessageResponse> messages,
+        List<StudyGroupSharedItemResponse> sharedItems
 ) {
 }

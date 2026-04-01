@@ -1,6 +1,8 @@
 package com.spartanscholars.backend.note;
 
+import com.spartanscholars.backend.note.dto.ImportNoteRequest;
 import com.spartanscholars.backend.note.dto.NoteResponse;
+import com.spartanscholars.backend.note.dto.NoteShareResponse;
 import com.spartanscholars.backend.note.dto.NoteSummaryResponse;
 import com.spartanscholars.backend.user.User;
 import java.util.Base64;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -77,6 +80,19 @@ public class NoteController {
     @PostMapping("/{id}/enhance")
     public ResponseEntity<NoteResponse> enhance(@PathVariable Long id, @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(noteService.enhanceWithAi(user, id));
+    }
+
+    @PostMapping("/{id}/share")
+    public ResponseEntity<NoteShareResponse> share(@PathVariable Long id, @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(noteService.createShareCode(user, id));
+    }
+
+    @PostMapping("/import")
+    public ResponseEntity<NoteResponse> importByPassword(
+            @AuthenticationPrincipal User user,
+            @RequestBody ImportNoteRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(noteService.importByPassword(user, request));
     }
 
     @GetMapping("/{id}/preview")

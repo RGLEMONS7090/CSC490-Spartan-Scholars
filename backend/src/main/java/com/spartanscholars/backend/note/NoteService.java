@@ -1,11 +1,14 @@
 package com.spartanscholars.backend.note;
 
 import com.spartanscholars.backend.ai.AiService;
+import com.spartanscholars.backend.note.dto.ImportNoteRequest;
 import com.spartanscholars.backend.note.dto.NoteResponse;
+import com.spartanscholars.backend.note.dto.NoteShareResponse;
 import com.spartanscholars.backend.note.dto.NoteSummaryProjection;
 import com.spartanscholars.backend.note.dto.NoteSummaryResponse;
 import com.spartanscholars.backend.user.User;
 import java.io.IOException;
+import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
@@ -20,9 +23,12 @@ public class NoteService {
 
     private static final int PREVIEW_LENGTH = 180;
     private static final long MAX_UPLOAD_SIZE_BYTES = 10_485_760;
+    private static final String SHARE_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    private static final int SHARE_CODE_LENGTH = 10;
 
     private final NoteRepository noteRepository;
     private final AiService aiService;
+    private final SecureRandom secureRandom = new SecureRandom();
 
     public NoteService(NoteRepository noteRepository, AiService aiService) {
         this.noteRepository = noteRepository;
@@ -47,6 +53,7 @@ public class NoteService {
                 preview,
                 note.getFileName(),
                 note.getFileName() != null && !note.getFileName().isBlank(),
+                note.getImported(),
                 note.getUpdatedAt()
         );
     }
@@ -126,6 +133,7 @@ public class NoteService {
         User authenticated = requireUser(user);
         Note note = new Note();
         note.setOwner(authenticated);
+        note.setImported(false);
         applyNoteFields(note, title, category, content, file);
         Note saved = noteRepository.save(note);
         return toResponse(saved);
@@ -163,6 +171,29 @@ public class NoteService {
         note.setContent(enhancedContent);
         Note saved = noteRepository.save(note);
         return toResponse(saved);
+    }
+
+    @Transactional
+    public NoteShareResponse createShareCode(User user, Long noteId) {
+        Note note = findOwnedNote(user, noteId);
+        if (note.getShareCode() == null || note.getShareCode().isBlank()) {
+            note.setShareCode(generateUniqueShareCode());
+            noteRepository.save(note);
+        }
+        return new NoteShareResponse(note.getId(), note.getTitle(), note.getShareCode());
+    }
+
+    @Transactional
+    public NoteResponse importByPassword(User user, ImportNoteRequest request) {
+        User authenticated = requireUser(user);
+        String password = requiredText(request.password(), "Share password is required.");
+        Note source = noteRepository.findByShareCode(password)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Shared note not found."));
+        if (source.getOwner().getId().equals(authenticated.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You already own this note.");
+        }
+        Note imported = cloneNote(source, authenticated);
+        return toResponse(noteRepository.save(imported));
     }
 
     @Transactional(readOnly = true)
@@ -287,6 +318,21 @@ return note;
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Note not found."));
     }
 
+    @Transactional(readOnly = true)
+    public Note findOwnedNoteEntity(User user, Long noteId) {
+        return findOwnedNote(user, noteId);
+    }
+
+    @Transactional
+    public NoteResponse importFromExisting(User user, Note source) {
+        User authenticated = requireUser(user);
+        if (source.getOwner().getId().equals(authenticated.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You already own this note.");
+        }
+        Note imported = cloneNote(source, authenticated);
+        return toResponse(noteRepository.save(imported));
+    }
+
     private User requireUser(User user) {
         if (user == null || user.getId() == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "You must be logged in.");
@@ -303,9 +349,48 @@ return note;
                 note.getFileName(),
                 note.getFileContentType(),
                 note.getFileName() != null && !note.getFileName().isBlank(),
+                note.isImported(),
                 note.getCreatedAt(),
                 note.getUpdatedAt()
         );
+    }
+
+    private Note cloneNote(Note source, User targetOwner) {
+        Note imported = new Note();
+        imported.setOwner(targetOwner);
+        imported.setTitle(source.getTitle());
+        imported.setCategory(source.getCategory());
+        imported.setContent(source.getContent());
+        imported.setFileName(source.getFileName());
+        imported.setFileContentType(source.getFileContentType());
+        imported.setFileData(source.getFileData());
+        imported.setImported(true);
+        imported.setShareCode(null);
+        return imported;
+    }
+
+    private String generateUniqueShareCode() {
+        String code = randomShareCode();
+        while (noteRepository.existsByShareCode(code)) {
+            code = randomShareCode();
+        }
+        return code;
+    }
+
+    private String randomShareCode() {
+        StringBuilder builder = new StringBuilder(SHARE_CODE_LENGTH);
+        for (int i = 0; i < SHARE_CODE_LENGTH; i++) {
+            builder.append(SHARE_CODE_ALPHABET.charAt(secureRandom.nextInt(SHARE_CODE_ALPHABET.length())));
+        }
+        return builder.toString();
+    }
+
+    private String requiredText(String value, String message) {
+        String sanitized = sanitize(value);
+        if (sanitized == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+        }
+        return sanitized;
     }
 
     private String sanitize(String value) {

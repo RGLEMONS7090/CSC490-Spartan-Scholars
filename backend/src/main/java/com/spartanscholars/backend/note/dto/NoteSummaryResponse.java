@@ -9,6 +9,7 @@ public record NoteSummaryResponse(
         String preview,
         String fileName,
         boolean hasAttachment,
+        boolean imported,
         Instant updatedAt
 ) {
 }

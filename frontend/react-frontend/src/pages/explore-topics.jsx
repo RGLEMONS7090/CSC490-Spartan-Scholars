@@ -245,17 +245,35 @@ function cleanAuditField(value) {
     return "";
   }
 
+  const invalidAuditFields = new Set([
+    "REQUIREMENTS",
+    "REQUIREMENTS STILL NEEDED",
+    "STILL NEEDED",
+    "MAJOR REQUIREMENTS",
+    "DEGREE REQUIREMENTS",
+  ]);
+
+  if (invalidAuditFields.has(cleaned.toUpperCase())) {
+    return "";
+  }
+
   const explicitMajorSection = cleaned.match(/see\s+major\s+in\s+(.+?)\s+section/i);
   if (explicitMajorSection?.[1]) {
     return explicitMajorSection[1].trim();
   }
 
-  return cleaned
+  const normalized = cleaned
     .replace(/^requirements\s+still\s+needed:\s*/i, "")
     .replace(/^see\s+major\s+in\s+/i, "")
     .replace(/\s+section$/i, "")
     .split(/\b(?:Program|College|Campus|Advisor|Academic Standing|UNCG Credits Earned|Transfer Credits Earned|Overall Credits Earned|Overall GPA)\b/i)[0]
     .trim();
+
+  if (invalidAuditFields.has(normalized.toUpperCase())) {
+    return "";
+  }
+
+  return normalized;
 }
 
 function formatImportedCourseMeta(course, fallback) {
@@ -325,12 +343,38 @@ function formatRequirementHeading(requirement) {
   );
 }
 
-function buildDetectedProgramName(parsedAudit) {
+function parseProgramNameParts(programName) {
+  const cleaned = (programName || "").trim();
+  if (!cleaned) {
+    return { major: "", degree: "" };
+  }
+
+  const match = cleaned.match(/^(.+?),\s*(B\.?S\.?|B\.?A\.?)$/i);
+  if (!match) {
+    return { major: cleaned, degree: "" };
+  }
+
+  const [, major, shortDegree] = match;
+  const normalizedShortDegree = shortDegree.replace(/\./g, "").toUpperCase();
+  const degree =
+    normalizedShortDegree === "BS"
+      ? "Bachelor of Science"
+      : normalizedShortDegree === "BA"
+        ? "Bachelor of Arts"
+        : shortDegree;
+
+  return { major: major.trim(), degree };
+}
+
+function buildDetectedProgramName(parsedAudit, fallbackProgramName = "") {
   const degree = cleanAuditField(parsedAudit?.degreeName);
   const major = cleanAuditField(parsedAudit?.major);
+  const fallbackProgram = (fallbackProgramName || "").trim();
+  const normalizedDegree = normalizeText(degree);
+  const normalizedFallback = normalizeText(fallbackProgram);
+  const fallbackParts = parseProgramNameParts(fallbackProgram);
 
   if (degree && major) {
-    const normalizedDegree = normalizeText(degree);
     const normalizedMajor = normalizeText(major);
     if (normalizedDegree.includes(normalizedMajor)) {
       return degree;
@@ -338,7 +382,57 @@ function buildDetectedProgramName(parsedAudit) {
     return `${degree} in ${major}`;
   }
 
+  if (major) {
+    if (fallbackParts.degree) {
+      return `${fallbackParts.degree} in ${major}`;
+    }
+    return major;
+  }
+
+  if (degree && fallbackProgram) {
+    const degreeIsGeneric =
+      normalizedDegree === "bachelor of science" ||
+      normalizedDegree === "bachelor of arts" ||
+      normalizedDegree === "bs" ||
+      normalizedDegree === "ba";
+
+    if (fallbackParts.major && (degreeIsGeneric || (normalizedFallback && !normalizedFallback.includes(normalizedDegree)))) {
+      return `${degree} in ${fallbackParts.major}`;
+    }
+
+    if (degreeIsGeneric || (normalizedFallback && !normalizedFallback.includes(normalizedDegree))) {
+      return fallbackProgram;
+    }
+  }
+
+  if (fallbackParts.major && fallbackParts.degree) {
+    return `${fallbackParts.degree} in ${fallbackParts.major}`;
+  }
+
+  if (fallbackProgram) {
+    return fallbackParts.major || fallbackProgram;
+  }
+
   return degree || major || "UNCG degree";
+}
+
+function buildAuditOverview(parsedAudit) {
+  const major = cleanAuditField(parsedAudit?.major);
+  const concentration = cleanAuditField(parsedAudit?.concentration);
+  const minor = cleanAuditField(parsedAudit?.minor);
+
+  const parts = [];
+  if (major) {
+    parts.push(`Major: ${major}`);
+  }
+  if (concentration) {
+    parts.push(`Concentration: ${concentration}`);
+  }
+  if (minor) {
+    parts.push(`Minor: ${minor}`);
+  }
+
+  return parts.join(" | ") || "Imported directly from Degree Works.";
 }
 
 function buildInitialState(storedState) {
@@ -384,6 +478,7 @@ export default function ExploreTopics() {
   const [uploadError, setUploadError] = useState("");
   const [selectedFileName, setSelectedFileName] = useState("");
   const selectorScrollRef = useRef(null);
+  const importedLeftColumnRef = useRef(null);
   const importedTakenCardRef = useRef(null);
   const importedCompletedListRef = useRef(null);
   const importedRemainingCardRef = useRef(null);
@@ -551,9 +646,9 @@ export default function ExploreTopics() {
   );
   const importedNextUpCourses = useMemo(() => {
     const remainingClasses = importedRemainingCourseDetails
-      .map(({ code, course }) => ({
+      .map(({ code, course, parsedTitle }) => ({
         code,
-        label: course?.title || "Exact course remaining",
+        label: parsedTitle || course?.title || "Exact course remaining",
       }));
     const remainingChoices = importedRequirementBlocks.map((requirement) => ({
       code: formatRequirementHeading(requirement),
@@ -561,11 +656,12 @@ export default function ExploreTopics() {
         ? `${requirement.credits} still needed in this area.`
         : "Remaining requirement from Degree Works",
     }));
-    return [...remainingClasses, ...remainingChoices].slice(0, 12);
+    return [...remainingClasses, ...remainingChoices].slice(0, 5);
   }, [importedRemainingCourseDetails, importedRequirementBlocks]);
-  const detectedDegreeName = buildDetectedProgramName(parsedAudit);
+  const detectedDegreeName = buildDetectedProgramName(parsedAudit, program.name);
   const detectedConcentration = cleanAuditField(parsedAudit?.concentration);
   const detectedMinor = cleanAuditField(parsedAudit?.minor);
+  const importedAuditOverview = buildAuditOverview(parsedAudit);
 
   const completedCount = requiredCourses.filter((course) => completedSet.has(course.code)).length;
   const remainingCourses = requiredCourses.filter((course) => !completedSet.has(course.code));
@@ -719,20 +815,26 @@ export default function ExploreTopics() {
     }
 
     const syncImportedCompletedHeight = () => {
+      if (window.innerWidth <= 1100) {
+        setImportedCompletedListMaxHeight(null);
+        return;
+      }
+
+      const leftColumn = importedLeftColumnRef.current;
       const takenCard = importedTakenCardRef.current;
       const completedList = importedCompletedListRef.current;
       const remainingCard = importedRemainingCardRef.current;
 
-      if (!takenCard || !completedList || !remainingCard) {
+      if (!leftColumn || !takenCard || !completedList || !remainingCard) {
         return;
       }
 
-      const takenRect = takenCard.getBoundingClientRect();
       const listRect = completedList.getBoundingClientRect();
-      const availableHeight = remainingCard.clientHeight - (listRect.top - takenRect.top);
-      const takenStyles = window.getComputedStyle(takenCard);
-      const bottomPadding = Number.parseFloat(takenStyles.paddingBottom || "0");
-      const nextHeight = Math.max(240, Math.floor(availableHeight - bottomPadding));
+      const remainingRect = remainingCard.getBoundingClientRect();
+      const cardStyles = window.getComputedStyle(takenCard);
+      const bottomPadding = Number.parseFloat(cardStyles.paddingBottom || "0");
+      const availableHeight = remainingRect.bottom - listRect.top - bottomPadding;
+      const nextHeight = Math.max(220, Math.floor(availableHeight));
       setImportedCompletedListMaxHeight(nextHeight);
     };
 
@@ -742,7 +844,7 @@ export default function ExploreTopics() {
     return () => {
       window.removeEventListener("resize", syncImportedCompletedHeight);
     };
-  }, [importedAuditMode, importedCompletedCourseDetails.length, importedInProgressCourseDetails.length, importedRequirementBlocks.length]);
+  }, [importedAuditMode, importedCompletedCourseDetails.length, importedNextUpCourses.length, importedInProgressCourseDetails.length, importedRequirementBlocks.length]);
 
   if (needsUpload) {
     return (
@@ -836,9 +938,9 @@ export default function ExploreTopics() {
 
           <div className="plannerHero__panel">
             <div className="plannerHero__school">University of North Carolina Greensboro</div>
-            <div className="plannerHero__meta">{program.college}</div>
-            <div className="plannerHero__program">{program.name}</div>
-            <p>{program.overview}</p>
+            <div className="plannerHero__meta">{importedAuditMode ? "Imported Degree Works Audit" : program.college}</div>
+            <div className="plannerHero__program">{importedAuditMode ? detectedDegreeName : program.name}</div>
+            <p>{importedAuditMode ? importedAuditOverview : program.overview}</p>
           </div>
         </section>
 
@@ -859,8 +961,9 @@ export default function ExploreTopics() {
 
         {importedAuditMode ? (
           <>
-            <section className="plannerControls">
-              <article className="plannerCard plannerCard--summary">
+            <section className="plannerAuditLayout">
+              <div ref={importedLeftColumnRef} className="plannerAuditColumn plannerAuditColumn--left">
+                <article className="plannerCard plannerCard--summary plannerCard--auditSnapshot">
                 <div className="plannerCard__heading">
                   <h2>Degree Works Snapshot</h2>
                   <p>
@@ -868,31 +971,59 @@ export default function ExploreTopics() {
                   </p>
                 </div>
 
-                <div className="plannerStats">
-                  <article className="plannerStat">
+                <div className="plannerStats plannerStats--auditSnapshot">
+                  <article className="plannerStat plannerStat--auditSnapshot">
                     <span>Completed</span>
                     <strong>{importedCompletedCourses.length}</strong>
                     <p>Courses the parser found as completed in your Degree Works PDF.</p>
                   </article>
-                  <article className="plannerStat">
+                  <article className="plannerStat plannerStat--auditSnapshot">
                     <span>In Progress</span>
                     <strong>{importedInProgressCourses.length}</strong>
                     <p>Classes currently underway according to the audit.</p>
                   </article>
-                  <article className="plannerStat">
+                  <article className="plannerStat plannerStat--auditSnapshot">
                     <span>Remaining</span>
                     <strong>{importedRemainingCourses.length + importedRequirementBlocks.length}</strong>
                     <p>Courses and requirement blocks still listed as remaining in the audit.</p>
                   </article>
-                  <article className="plannerStat">
+                  <article className="plannerStat plannerStat--auditSnapshot">
                     <span>Degree</span>
                     <strong>{detectedDegreeName}</strong>
-                    <p>{detectedConcentration || detectedMinor || "No concentration detected"}</p>
+                    <p>{detectedConcentration || detectedMinor || ""}</p>
                   </article>
                 </div>
               </article>
 
-              <article className="plannerCard plannerCard--recommendations">
+                <section ref={importedTakenCardRef} className="plannerCard plannerCard--taken plannerCard--takenAudit">
+                  <div className="plannerCard__heading">
+                    <h2>Completed Courses</h2>
+                    <p>Directly parsed from the uploaded Degree Works PDF.</p>
+                  </div>
+
+                  <div
+                    ref={importedCompletedListRef}
+                    className="plannerCourseSelector plannerCourseSelector--imported plannerCourseSelector--auditFill"
+                    style={importedCompletedListMaxHeight ? { maxHeight: `${importedCompletedListMaxHeight}px` } : undefined}
+                  >
+                    {importedCompletedCourseDetails.map(({ code, course, parsedTitle }) => (
+                      <article key={code} className="plannerCourse plannerCourse--done plannerCourse--single">
+                        <div className="plannerCourse__body">
+                          <div className="plannerCourse__top">
+                            <strong>{code}</strong>
+                            <span>Done</span>
+                          </div>
+                          <h4>{parsedTitle || course?.title || "Completed course from audit"}</h4>
+                          <p>{formatImportedCourseMeta(course, "Imported from Degree Works PDF.")}</p>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              </div>
+
+              <div className="plannerAuditColumn plannerAuditColumn--right">
+                <article className="plannerCard plannerCard--recommendations">
                 <div className="plannerCard__heading">
                   <h2>Next Up From Audit</h2>
                   <p>These come from your imported audit, not from the simplified seeded requirement model.</p>
@@ -915,36 +1046,8 @@ export default function ExploreTopics() {
                   </div>
                 )}
               </article>
-            </section>
 
-            <section className="plannerTwoColumn plannerTwoColumn--audit">
-              <section ref={importedTakenCardRef} className="plannerCard plannerCard--taken">
-                <div className="plannerCard__heading">
-                  <h2>Completed Courses</h2>
-                  <p>Directly parsed from the uploaded Degree Works PDF.</p>
-                </div>
-
-                <div
-                  ref={importedCompletedListRef}
-                  className="plannerCourseSelector plannerCourseSelector--imported"
-                  style={importedCompletedListMaxHeight ? { maxHeight: `${importedCompletedListMaxHeight}px` } : undefined}
-                >
-                  {importedCompletedCourseDetails.map(({ code, course, parsedTitle }) => (
-                    <article key={code} className="plannerCourse plannerCourse--done plannerCourse--single">
-                      <div className="plannerCourse__body">
-                        <div className="plannerCourse__top">
-                          <strong>{code}</strong>
-                          <span>Done</span>
-                        </div>
-                        <h4>{parsedTitle || course?.title || "Completed course from audit"}</h4>
-                        <p>{formatImportedCourseMeta(course, "Imported from Degree Works PDF.")}</p>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </section>
-
-              <section ref={importedRemainingCardRef} className="plannerCard plannerCard--remainingCourses">
+                <section ref={importedRemainingCardRef} className="plannerCard plannerCard--remainingCourses">
                 <div className="plannerCard__heading">
                   <h2>Still Needed According To Audit</h2>
                   <p>This list is shown straight from Degree Works parsing so it should be closer to your real graduation status.</p>
@@ -997,32 +1100,13 @@ export default function ExploreTopics() {
                       {importedRequirementBlocks.map((requirement) => (
                         <article key={requirement.id || requirement.label} className="plannerCourse">
                           <div className="plannerCourse__body">
-                            <div className="plannerCourse__top">
-                              <strong>{formatRequirementHeading(requirement)}</strong>
-                            </div>
                             <h4>{describeRequirementType(requirement.kind, requirement.countNeeded)}</h4>
                             <p>
                               {requirement.credits
                                 ? `${requirement.credits} still needed in this area.`
                                 : "Imported from Degree Works PDF."}
                             </p>
-                            {requirement.options.length > 0 ? (
-                              <details className="plannerRequirementDetails">
-                                <summary>See possible options</summary>
-                                <div className="plannerRequirementOptions">
-                                  {requirement.options.map((option) => (
-                                    <div key={option} className="plannerRequirementOption">
-                                      <strong>{option.split(" - ")[0]}</strong>
-                                      <span>{option.split(" - ").slice(1).join(" - ") || "Option from Degree Works"}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </details>
-                            ) : (
-                              <p className="plannerRequirementHint">
-                                Exact option mapping was not clear from the audit. Use the requirement text above as the source of truth.
-                              </p>
-                            )}
+                            <p className="plannerRequirementSummary">{formatRequirementHeading(requirement)}</p>
                           </div>
                           <span className="plannerCourse__status plannerCourse__status--blocked">Still needed</span>
                         </article>
@@ -1031,6 +1115,7 @@ export default function ExploreTopics() {
                   </article>
                 </div>
               </section>
+              </div>
             </section>
           </>
         ) : (
