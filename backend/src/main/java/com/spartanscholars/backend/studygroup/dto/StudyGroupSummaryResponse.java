@@ -9,6 +9,7 @@ public record StudyGroupSummaryResponse(
         String description,
         String ownerName,
         long memberCount,
+        boolean privateGroup,
         boolean joined,
         Instant updatedAt
 ) {

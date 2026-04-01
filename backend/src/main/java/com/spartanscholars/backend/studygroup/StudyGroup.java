@@ -39,6 +39,12 @@ public class StudyGroup {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(nullable = false)
+    private boolean privateGroup;
+
+    @Column(unique = true)
+    private String accessCode;
+
     @OneToMany(mappedBy = "group", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<StudyGroupMember> memberships = new ArrayList<>();
 
@@ -105,6 +111,22 @@ public class StudyGroup {
 
     public List<StudyGroupMessage> getMessages() {
         return messages;
+    }
+
+    public boolean isPrivateGroup() {
+        return privateGroup;
+    }
+
+    public void setPrivateGroup(boolean privateGroup) {
+        this.privateGroup = privateGroup;
+    }
+
+    public String getAccessCode() {
+        return accessCode;
+    }
+
+    public void setAccessCode(String accessCode) {
+        this.accessCode = accessCode;
     }
 
     public Instant getCreatedAt() {

@@ -11,4 +11,8 @@ public interface StudyGroupRepository extends JpaRepository<StudyGroup, Long> {
     List<StudyGroup> findAllByOrderByUpdatedAtDesc();
 
     List<StudyGroup> findAllByOwnerId(Long ownerId);
+
+    boolean existsByAccessCode(String accessCode);
+
+    Optional<StudyGroup> findByAccessCode(String accessCode);
 }

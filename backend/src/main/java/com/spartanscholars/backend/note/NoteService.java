@@ -6,6 +6,7 @@ import com.spartanscholars.backend.note.dto.NoteResponse;
 import com.spartanscholars.backend.note.dto.NoteShareResponse;
 import com.spartanscholars.backend.note.dto.NoteSummaryProjection;
 import com.spartanscholars.backend.note.dto.NoteSummaryResponse;
+import com.spartanscholars.backend.notification.NotificationService;
 import com.spartanscholars.backend.user.User;
 import java.io.IOException;
 import java.security.SecureRandom;
@@ -28,11 +29,13 @@ public class NoteService {
 
     private final NoteRepository noteRepository;
     private final AiService aiService;
+    private final NotificationService notificationService;
     private final SecureRandom secureRandom = new SecureRandom();
 
-    public NoteService(NoteRepository noteRepository, AiService aiService) {
+    public NoteService(NoteRepository noteRepository, AiService aiService, NotificationService notificationService) {
         this.noteRepository = noteRepository;
         this.aiService = aiService;
+        this.notificationService = notificationService;
     }
 
     @Transactional(readOnly = true)
@@ -193,6 +196,7 @@ public class NoteService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You already own this note.");
         }
         Note imported = cloneNote(source, authenticated);
+        notifyOwnerOfImport(source, authenticated);
         return toResponse(noteRepository.save(imported));
     }
 
@@ -330,6 +334,7 @@ return note;
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You already own this note.");
         }
         Note imported = cloneNote(source, authenticated);
+        notifyOwnerOfImport(source, authenticated);
         return toResponse(noteRepository.save(imported));
     }
 
@@ -391,6 +396,15 @@ return note;
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
         }
         return sanitized;
+    }
+
+    private void notifyOwnerOfImport(Note source, User importer) {
+        notificationService.notifyUser(
+                source.getOwner(),
+                "Your note was imported",
+                importer.getName() + " imported your note " + source.getTitle() + ".",
+                "/notes"
+        );
     }
 
     private String sanitize(String value) {

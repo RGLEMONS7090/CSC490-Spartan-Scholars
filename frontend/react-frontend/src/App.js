@@ -9,6 +9,7 @@ import {ProfileProvider} from "./context/profile-context";
 
 //importing pages
 import Index from "./pages/index";
+import Landing from "./pages/landing";
 import Login from "./pages/login";
 import Signup from "./pages/signup";
 import DiscussionBoard from "./pages/discussion-board";
@@ -45,6 +46,7 @@ export default function App() {
       <ProfileProvider>
         <BrowserRouter>
           <Routes>
+            <Route path="/welcome" element={<Landing />} />
             <Route element={<AppLayout />}>
               <Route path="/" element={<Index />} />
               <Route path="/discussion-board" element={<DiscussionBoard />} />

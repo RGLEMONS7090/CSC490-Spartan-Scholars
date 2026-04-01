@@ -1,6 +1,7 @@
 package com.spartanscholars.backend.quiz;
 
 import com.spartanscholars.backend.ai.AiService;
+import com.spartanscholars.backend.notification.NotificationService;
 import com.spartanscholars.backend.quiz.dto.CreateFlashcardQuizRequest;
 import com.spartanscholars.backend.quiz.dto.CreateTestQuizRequest;
 import com.spartanscholars.backend.quiz.dto.FlashcardRequest;
@@ -36,16 +37,19 @@ public class QuizService {
     private final StudyQuizRepository studyQuizRepository;
     private final QuizAttemptRepository quizAttemptRepository;
     private final AiService aiService;
+    private final NotificationService notificationService;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public QuizService(
             StudyQuizRepository studyQuizRepository,
             QuizAttemptRepository quizAttemptRepository,
-            AiService aiService
+            AiService aiService,
+            NotificationService notificationService
     ) {
         this.studyQuizRepository = studyQuizRepository;
         this.quizAttemptRepository = quizAttemptRepository;
         this.aiService = aiService;
+        this.notificationService = notificationService;
     }
 
     @Transactional(readOnly = true)
@@ -289,6 +293,7 @@ public class QuizService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You already own this quiz.");
         }
         StudyQuiz imported = cloneQuiz(source, authenticated);
+        notifyOwnerOfImport(source, authenticated);
         StudyQuiz saved = studyQuizRepository.save(imported);
         return new QuizSummaryResponse(saved.getId(), saved.getTitle(), saved.getType(), itemCount(saved), false, true, null, saved.getUpdatedAt());
     }
@@ -305,6 +310,7 @@ public class QuizService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You already own this quiz.");
         }
         StudyQuiz imported = cloneQuiz(source, authenticated);
+        notifyOwnerOfImport(source, authenticated);
         StudyQuiz saved = studyQuizRepository.save(imported);
         return new QuizSummaryResponse(saved.getId(), saved.getTitle(), saved.getType(), itemCount(saved), false, true, null, saved.getUpdatedAt());
     }
@@ -403,6 +409,15 @@ public class QuizService {
             builder.append(SHARE_CODE_ALPHABET.charAt(secureRandom.nextInt(SHARE_CODE_ALPHABET.length())));
         }
         return builder.toString();
+    }
+
+    private void notifyOwnerOfImport(StudyQuiz source, User importer) {
+        notificationService.notifyUser(
+                source.getOwner(),
+                "Your quiz was imported",
+                importer.getName() + " imported your quiz " + source.getTitle() + ".",
+                "/take-quizzes"
+        );
     }
 
     private String sanitize(String value) {

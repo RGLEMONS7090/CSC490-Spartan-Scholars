@@ -5,6 +5,7 @@ import { logout } from "../assets/js/utils/logout";
 import { Helmet } from "react-helmet-async";
 import { restoreUserSession } from "../assets/js/utils/adminSession";
 import {ProfileContext} from "../context/profile-context";
+import { fetchNotifications, markAllNotificationsRead, markNotificationRead } from "../assets/js/api/notificationsApi";
 
 import logoLight from "../assets/images/logo_spartan_scholars.png";
 import logoLightText from "../assets/images/text_logo.png";
@@ -18,12 +19,22 @@ export default function AppLayout() {
   const previousPathRef = useRef(location.pathname);
   const settingsMenuContainerRef = useRef(null);
   const settingsMenuRef = useRef(null);
+  const notificationMenuContainerRef = useRef(null);
+  const notificationMenuRef = useRef(null);
   const { theme, toggleTheme } = useTheme();
   const [collapsed, setCollapsed] = useState(localStorage.getItem("sidebarCollapsed") === "true");
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   function closeSettingsMenu() {
     if (settingsMenuRef.current) {
       settingsMenuRef.current.open = false;
+    }
+  }
+
+  function closeNotificationMenu() {
+    if (notificationMenuRef.current) {
+      notificationMenuRef.current.open = false;
     }
   }
 
@@ -58,12 +69,38 @@ export default function AppLayout() {
     }
     previousPathRef.current = location.pathname;
     closeSettingsMenu();
+    closeNotificationMenu();
   }, [isAdminRoute, location.pathname]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadNotifications() {
+      try {
+        const data = await fetchNotifications();
+        if (!cancelled) {
+          setNotifications(data.notifications || []);
+          setUnreadCount(data.unreadCount || 0);
+        }
+      } catch {}
+    }
+
+    loadNotifications();
+    const intervalId = window.setInterval(loadNotifications, 15000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, []);
 
   useEffect(() => {
     function handlePointerDown(event) {
       if (!settingsMenuContainerRef.current?.contains(event.target)) {
         closeSettingsMenu();
+      }
+      if (!notificationMenuContainerRef.current?.contains(event.target)) {
+        closeNotificationMenu();
       }
     }
 
@@ -75,6 +112,38 @@ export default function AppLayout() {
       document.removeEventListener("touchstart", handlePointerDown);
     };
   }, []);
+
+  async function handleNotificationsToggle() {
+    const willOpen = !notificationMenuRef.current?.open;
+    if (!willOpen) {
+      return;
+    }
+    try {
+      const data = await fetchNotifications();
+      setNotifications(data.notifications || []);
+      setUnreadCount(data.unreadCount || 0);
+    } catch {}
+  }
+
+  async function handleMarkAllRead() {
+    await markAllNotificationsRead();
+    setNotifications((current) => current.map((item) => ({ ...item, read: true })));
+    setUnreadCount(0);
+  }
+
+  async function handleNotificationClick(item) {
+    if (!item.read) {
+      await markNotificationRead(item.id);
+      setNotifications((current) =>
+        current.map((entry) => (entry.id === item.id ? { ...entry, read: true } : entry))
+      );
+      setUnreadCount((current) => Math.max(0, current - 1));
+    }
+    closeNotificationMenu();
+    if (item.href) {
+      navigate(item.href);
+    }
+  }
 
   const { profile } = useContext(ProfileContext);
 
@@ -121,6 +190,44 @@ export default function AppLayout() {
         </div>
 
         <div className="topbar__right">
+          <div ref={notificationMenuContainerRef}>
+            <details className="notificationMenu" ref={notificationMenuRef}>
+              <summary className="notificationMenu__trigger" aria-label="Open notifications" onClick={handleNotificationsToggle}>
+                <span className="notificationMenu__icon" aria-hidden="true">🔔</span>
+                {unreadCount > 0 && <span className="notificationMenu__badge">{unreadCount > 9 ? "9+" : unreadCount}</span>}
+              </summary>
+
+              <div className="notificationMenu__panel">
+                <div className="notificationMenu__header">
+                  <strong>Notifications</strong>
+                  {unreadCount > 0 && (
+                    <button type="button" className="notificationMenu__markAll" onClick={handleMarkAllRead}>
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+
+                <div className="notificationMenu__list">
+                  {notifications.length === 0 ? (
+                    <p className="notificationMenu__empty">No notifications yet.</p>
+                  ) : (
+                    notifications.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className={`notificationMenu__item ${item.read ? "" : "notificationMenu__item--unread"}`}
+                        onClick={() => handleNotificationClick(item)}
+                      >
+                        <strong>{item.title}</strong>
+                        <span>{item.message}</span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            </details>
+          </div>
+
           <div ref={settingsMenuContainerRef}>
           <details className="settingsMenu" ref={settingsMenuRef}>
             <summary className="settingsMenu__trigger" aria-label="Open settings menu">
@@ -203,7 +310,7 @@ export default function AppLayout() {
             </NavLink>
 
             <NavLink to="/analytics" className={({ isActive }) => "nav__item" + (isActive ? " nav__item--active" : "")}>
-              View Analytics
+              Productivity Hub
             </NavLink>
           </nav>
         </aside>
