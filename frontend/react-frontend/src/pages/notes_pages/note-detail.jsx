@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { apiFetch, enhanceNoteWithAi } from "../../assets/js/api/notesApi";
+import {
+  apiFetch,
+  enhanceNoteWithAi,
+  publishNoteToBoard,
+  unpublishNoteFromBoard,
+} from "../../assets/js/api/notesApi";
 
 export default function NoteDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [note, setNote] = useState(null);
   const [enhancing, setEnhancing] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -56,6 +62,25 @@ export default function NoteDetails() {
     });
   }
 
+  async function handleTogglePublicBoard() {
+    if (!note?.content?.trim()) {
+      return;
+    }
+
+    setPublishing(true);
+    setError("");
+    try {
+      const updatedNote = note.publishedToBoard
+        ? await unpublishNoteFromBoard(note.id)
+        : await publishNoteToBoard(note.id);
+      setNote(updatedNote);
+    } catch (publishError) {
+      setError(publishError.message);
+    } finally {
+      setPublishing(false);
+    }
+  }
+
   if (!note) {
     return <p>{error || "Loading..."}</p>;
   }
@@ -75,6 +100,17 @@ export default function NoteDetails() {
             Make Quiz Using Note
           </button>
           <button
+            className="noteDetails__shareForumBtn"
+            disabled={!note.content?.trim() || publishing}
+            onClick={handleTogglePublicBoard}
+          >
+            {publishing
+              ? "Updating..."
+              : note.publishedToBoard
+                ? "Remove from Public Notes"
+                : "Share to Public Notes"}
+          </button>
+          <button
             className="noteDetails__enhanceBtn"
             disabled={enhancing || !note.content?.trim()}
             onClick={handleEnhance}
@@ -91,6 +127,11 @@ export default function NoteDetails() {
       <p className="noteDetails__updated">
         Updated {new Date(note.updatedAt).toLocaleString()}
       </p>
+      {note.publishedToBoard && (
+        <p className="noteDetails__boardStatus">
+          Visible in the Public Notes section on the discussion board.
+        </p>
+      )}
       {note.category && <p className="noteDetails__category">{note.category}</p>}
       {error && <p className="noteDetails__error">{error}</p>}
 

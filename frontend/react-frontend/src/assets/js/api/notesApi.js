@@ -40,6 +40,25 @@ export async function createNoteShare(noteId) {
   return response.json();
 }
 
+export async function fetchPublicBoardNotes() {
+  const response = await apiFetch("/api/notes/public");
+  return response.json();
+}
+
+export async function publishNoteToBoard(noteId) {
+  const response = await apiFetch(`/api/notes/${noteId}/publish-to-board`, {
+    method: "POST",
+  });
+  return response.json();
+}
+
+export async function unpublishNoteFromBoard(noteId) {
+  const response = await apiFetch(`/api/notes/${noteId}/publish-to-board`, {
+    method: "DELETE",
+  });
+  return response.json();
+}
+
 export async function importNoteByPassword(password) {
   const response = await apiFetch("/api/notes/import", {
     method: "POST",

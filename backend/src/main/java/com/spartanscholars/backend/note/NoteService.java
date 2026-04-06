@@ -6,6 +6,7 @@ import com.spartanscholars.backend.note.dto.NoteResponse;
 import com.spartanscholars.backend.note.dto.NoteShareResponse;
 import com.spartanscholars.backend.note.dto.NoteSummaryProjection;
 import com.spartanscholars.backend.note.dto.NoteSummaryResponse;
+import com.spartanscholars.backend.note.dto.PublicBoardNoteResponse;
 import com.spartanscholars.backend.notification.NotificationService;
 import com.spartanscholars.backend.user.User;
 import java.io.IOException;
@@ -137,6 +138,8 @@ public class NoteService {
         Note note = new Note();
         note.setOwner(authenticated);
         note.setImported(false);
+        note.setPublishedToBoard(false);
+        note.setPublishedToBoardAt(null);
         applyNoteFields(note, title, category, content, file);
         Note saved = noteRepository.save(note);
         return toResponse(saved);
@@ -198,6 +201,33 @@ public class NoteService {
         Note imported = cloneNote(source, authenticated);
         notifyOwnerOfImport(source, authenticated);
         return toResponse(noteRepository.save(imported));
+    }
+
+    @Transactional(readOnly = true)
+    public List<PublicBoardNoteResponse> listPublicBoardNotes(User user) {
+        User authenticated = requireUser(user);
+        return noteRepository.findByPublishedToBoardTrueOrderByPublishedToBoardAtDesc()
+                .stream()
+                .map(note -> toPublicBoardResponse(note, authenticated))
+                .toList();
+    }
+
+    @Transactional
+    public NoteResponse publishToBoard(User user, Long noteId) {
+        Note note = findOwnedNote(user, noteId);
+        note.setPublishedToBoard(true);
+        if (note.getPublishedToBoardAt() == null) {
+            note.setPublishedToBoardAt(java.time.Instant.now());
+        }
+        return toResponse(noteRepository.save(note));
+    }
+
+    @Transactional
+    public NoteResponse unpublishFromBoard(User user, Long noteId) {
+        Note note = findOwnedNote(user, noteId);
+        note.setPublishedToBoard(false);
+        note.setPublishedToBoardAt(null);
+        return toResponse(noteRepository.save(note));
     }
 
     @Transactional(readOnly = true)
@@ -355,8 +385,28 @@ return note;
                 note.getFileContentType(),
                 note.getFileName() != null && !note.getFileName().isBlank(),
                 note.isImported(),
+                note.isPublishedToBoard(),
                 note.getCreatedAt(),
                 note.getUpdatedAt()
+        );
+    }
+
+    private PublicBoardNoteResponse toPublicBoardResponse(Note note, User authenticated) {
+        return new PublicBoardNoteResponse(
+                note.getId(),
+                note.getTitle(),
+                note.getCategory(),
+                note.getContent(),
+                note.getFileName(),
+                note.getFileContentType(),
+                note.getFileName() != null && !note.getFileName().isBlank(),
+                note.isImported(),
+                note.isPublishedToBoard(),
+                note.getOwner().getId().equals(authenticated.getId()),
+                note.getOwner().getName(),
+                note.getCreatedAt(),
+                note.getUpdatedAt(),
+                note.getPublishedToBoardAt()
         );
     }
 
@@ -370,6 +420,8 @@ return note;
         imported.setFileContentType(source.getFileContentType());
         imported.setFileData(source.getFileData());
         imported.setImported(true);
+        imported.setPublishedToBoard(false);
+        imported.setPublishedToBoardAt(null);
         imported.setShareCode(null);
         return imported;
     }

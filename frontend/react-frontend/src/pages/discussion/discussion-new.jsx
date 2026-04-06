@@ -1,54 +1,37 @@
 import { Link, useNavigate } from "react-router-dom";
-import {useState} from "react";
-import useTheme from "../../assets/js/useTheme";
-import {logout} from "../../assets/js/utils/logout";
-import {Helmet} from "react-helmet-async";
-
+import { useState } from "react";
+import { Helmet } from "react-helmet-async";
+import { createDiscussion } from "../../assets/js/api/discussionAPi";
 
 export default function DiscussionNew() {
-  
   const navigate = useNavigate();
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  const[title,setTitle] = useState("");
-  const[description,setDescription] = useState("");
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setSubmitting(true);
+    setError("");
 
-  const token = localStorage.getItem("token");
-
-  async function handleSubmit(e){
-    e.preventDefault();
-    if (!token){
-        alert("You must be logged in.");
-        return;
-    }
-
-    try{
-        const response = await fetch("/api/discussions", {
-            method:"POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({title, description}),
-        });
-
-        if (!response.ok){
-            const data = await response.json().catch(() => ({}));
-            throw new Error(data.message || "Failed to create discussion.");
-        }
-
-        navigate("/discussion-board");
-    } catch(err){
-        alert(err.message);
+    try {
+      await createDiscussion({ title, description });
+      navigate("/discussion-board");
+    } catch (submitError) {
+      setError(submitError.message);
+    } finally {
+      setSubmitting(false);
     }
   }
 
   return (
-    <> 
+    <>
       <Helmet>
         <title> Create Discussion Board </title>
       </Helmet>
-      
-        <main className="main main--discussion">
+
+      <main className="main main--discussion">
         <section className="discussionTop">
           <div>
             <div className="discussionTitle">
@@ -56,7 +39,7 @@ export default function DiscussionNew() {
               <h1>New Discussion</h1>
             </div>
             <p className="discussionTop__subtitle">
-              Create a title and description, then publish to the board.
+              Create a discussion post for questions, advice, or conversation.
             </p>
           </div>
 
@@ -79,7 +62,7 @@ export default function DiscussionNew() {
                 maxLength="200"
                 required
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(event) => setTitle(event.target.value)}
               />
             </div>
 
@@ -94,18 +77,20 @@ export default function DiscussionNew() {
                 rows="8"
                 required
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={(event) => setDescription(event.target.value)}
               ></textarea>
             </div>
 
+            {error && <p className="quizError">{error}</p>}
+
             <div className="d-flex justify-content-end">
-              <button type="submit" className="discussionTop__button">
-                Done
+              <button type="submit" className="discussionTop__button" disabled={submitting}>
+                {submitting ? "Publishing..." : "Done"}
               </button>
             </div>
           </form>
         </article>
       </main>
     </>
-  )
+  );
 }

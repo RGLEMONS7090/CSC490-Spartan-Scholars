@@ -71,6 +71,14 @@ export async function fetchDiscussions(sort, query = "") {
   return response.json();
 }
 
+export async function createDiscussion(payload) {
+  const response = await apiFetch("/api/discussions", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return response.json();
+}
+
 export async function toggleLike(discussionId) {
   const response = await apiFetch(`/api/discussions/${discussionId}/likes`, {
     method: "POST",

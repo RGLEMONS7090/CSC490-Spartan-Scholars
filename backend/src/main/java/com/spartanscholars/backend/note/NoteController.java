@@ -4,6 +4,7 @@ import com.spartanscholars.backend.note.dto.ImportNoteRequest;
 import com.spartanscholars.backend.note.dto.NoteResponse;
 import com.spartanscholars.backend.note.dto.NoteShareResponse;
 import com.spartanscholars.backend.note.dto.NoteSummaryResponse;
+import com.spartanscholars.backend.note.dto.PublicBoardNoteResponse;
 import com.spartanscholars.backend.user.User;
 import java.util.Base64;
 import java.util.List;
@@ -38,6 +39,11 @@ public class NoteController {
     @GetMapping
     public ResponseEntity<List<NoteSummaryResponse>> list(@AuthenticationPrincipal User user) {
         return ResponseEntity.ok(noteService.list(user));
+    }
+
+    @GetMapping("/public")
+    public ResponseEntity<List<PublicBoardNoteResponse>> listPublicBoardNotes(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(noteService.listPublicBoardNotes(user));
     }
 
     @GetMapping("/{id}")
@@ -85,6 +91,16 @@ public class NoteController {
     @PostMapping("/{id}/share")
     public ResponseEntity<NoteShareResponse> share(@PathVariable Long id, @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(noteService.createShareCode(user, id));
+    }
+
+    @PostMapping("/{id}/publish-to-board")
+    public ResponseEntity<NoteResponse> publishToBoard(@PathVariable Long id, @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(noteService.publishToBoard(user, id));
+    }
+
+    @DeleteMapping("/{id}/publish-to-board")
+    public ResponseEntity<NoteResponse> unpublishFromBoard(@PathVariable Long id, @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(noteService.unpublishFromBoard(user, id));
     }
 
     @PostMapping("/import")

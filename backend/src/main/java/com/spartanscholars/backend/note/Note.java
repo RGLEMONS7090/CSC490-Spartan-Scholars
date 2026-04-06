@@ -50,6 +50,11 @@ public class Note {
     @Column(nullable = false)
     private boolean imported;
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean publishedToBoard;
+
+    private Instant publishedToBoardAt;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -146,6 +151,22 @@ public class Note {
 
     public void setImported(boolean imported) {
         this.imported = imported;
+    }
+
+    public boolean isPublishedToBoard() {
+        return publishedToBoard;
+    }
+
+    public void setPublishedToBoard(boolean publishedToBoard) {
+        this.publishedToBoard = publishedToBoard;
+    }
+
+    public Instant getPublishedToBoardAt() {
+        return publishedToBoardAt;
+    }
+
+    public void setPublishedToBoardAt(Instant publishedToBoardAt) {
+        this.publishedToBoardAt = publishedToBoardAt;
     }
 
     public Instant getCreatedAt() {
