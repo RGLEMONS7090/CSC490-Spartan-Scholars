@@ -301,15 +301,15 @@ export default function AppLayout() {
               Take Quizzes
             </NavLink>
 
-            <NavLink to="/explore-topics" className={({ isActive }) => "nav__item" + (isActive ? " nav__item--active" : "")}>
+            <NavLink to="/UNCG-Planner" className={({ isActive }) => "nav__item" + (isActive ? " nav__item--active" : "")}>
               UNCG Planner
             </NavLink>
 
-            <NavLink to="/discussion-board" className={({ isActive }) => "nav__item" + (isActive ? " nav__item--active" : "")}>
-              Discussion Board
+            <NavLink to="/public-notes" className={({ isActive }) => "nav__item" + (isActive ? " nav__item--active" : "")}>
+              Public Notes
             </NavLink>
 
-            <NavLink to="/analytics" className={({ isActive }) => "nav__item" + (isActive ? " nav__item--active" : "")}>
+            <NavLink to="/Productivity-Hub" className={({ isActive }) => "nav__item" + (isActive ? " nav__item--active" : "")}>
               Productivity Hub
             </NavLink>
           </nav>

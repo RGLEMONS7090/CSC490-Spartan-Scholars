@@ -129,7 +129,7 @@ export default function NoteDetails() {
       </p>
       {note.publishedToBoard && (
         <p className="noteDetails__boardStatus">
-          Visible in the Public Notes section on the discussion board.
+          Visible in the Public Notes forum.
         </p>
       )}
       {note.category && <p className="noteDetails__category">{note.category}</p>}

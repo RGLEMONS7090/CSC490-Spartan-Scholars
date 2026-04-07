@@ -6,7 +6,7 @@ public record PublicBoardNoteResponse(
         Long id,
         String title,
         String category,
-        String content,
+        String description,
         String fileName,
         String fileContentType,
         boolean hasAttachment,

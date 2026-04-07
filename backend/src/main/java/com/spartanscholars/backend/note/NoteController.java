@@ -46,6 +46,11 @@ public class NoteController {
         return ResponseEntity.ok(noteService.listPublicBoardNotes(user));
     }
 
+    @GetMapping("/public/{id}")
+    public ResponseEntity<NoteResponse> getPublicBoardNote(@PathVariable Long id, @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(noteService.getPublicBoardNote(user, id));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<NoteResponse> getById(@PathVariable Long id, @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(noteService.getById(user, id));
@@ -109,6 +114,14 @@ public class NoteController {
             @RequestBody ImportNoteRequest request
     ) {
         return ResponseEntity.status(HttpStatus.CREATED).body(noteService.importByPassword(user, request));
+    }
+
+    @PostMapping("/{id}/import")
+    public ResponseEntity<NoteResponse> importPublicBoardNote(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(noteService.importPublicBoardNote(user, id));
     }
 
     @GetMapping("/{id}/preview")

@@ -28,15 +28,15 @@ const featureCards = [
   },
   {
     icon: discussionIcon,
-    title: "Study with people, not in isolation",
-    text: "Use discussion boards and study groups to ask questions, share material, and keep momentum when a class gets hard.",
+    title: "Study from shared material faster",
+    text: "Browse public notes from other students, import what helps, and keep study groups focused on actual course work.",
   },
 ];
 
 const steps = [
   "Create an account and drop in your notes or ideas.",
   "Build quizzes, flashcards, and a study plan from the same workspace.",
-  "Join groups, ask questions, and keep your work moving each week.",
+  "Join groups, browse public notes, and keep your work moving each week.",
 ];
 
 const vibeTags = ["No more tab chaos", "Private study groups", "AI study support"];
@@ -172,7 +172,7 @@ export default function Landing() {
             <span className="landingSection__tag">What it feels like</span>
             <h2>Less scrambling. More studying with a plan.</h2>
             <p>
-              Instead of opening a notes app, a calendar app, a flashcard app, a discussion space, and an AI tab, you work from
+              Instead of opening a notes app, a calendar app, a flashcard app, a public note feed, and an AI tab, you work from
               one system that already knows what you are studying.
             </p>
           </article>

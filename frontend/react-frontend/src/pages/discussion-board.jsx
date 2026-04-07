@@ -1,10 +1,10 @@
-import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { fetchDiscussions } from "../assets/js/api/discussionAPi";
 import {
   apiFetch,
   fetchPublicBoardNotes,
+  importPublicNote,
   publishNoteToBoard,
   unpublishNoteFromBoard,
 } from "../assets/js/api/notesApi";
@@ -12,49 +12,15 @@ import discussionLightImage from "../assets/images/light_dicsussion.png";
 import discussionDarkImage from "../assets/images/dark_mode_dicsussion.png";
 
 export default function DiscussionBoard() {
-  const [discussions, setDiscussions] = useState([]);
   const [publicNotes, setPublicNotes] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [loadingPublicNotes, setLoadingPublicNotes] = useState(true);
-  const [sort, setSort] = useState("all");
   const [query, setQuery] = useState("");
-  const [error, setError] = useState("");
   const [notesError, setNotesError] = useState("");
   const [shareableNotes, setShareableNotes] = useState([]);
   const [selectedNoteId, setSelectedNoteId] = useState("");
   const [sharingNote, setSharingNote] = useState(false);
+  const [importingNoteId, setImportingNoteId] = useState(null);
   const navigate = useNavigate();
-
-  const [cache, setCache] = useState({
-    all: null,
-    trending: null,
-    recent: null,
-  });
-
-  async function loadDiscussions(sortType = "all", searchQuery = "") {
-    try {
-      setError("");
-      const normalizedQuery = searchQuery.trim();
-
-      if (!normalizedQuery && cache[sortType]) {
-        setDiscussions(cache[sortType]);
-        setLoading(false);
-        return;
-      } else {
-        setLoading(true);
-      }
-
-      const data = await fetchDiscussions(sortType, normalizedQuery);
-      if (!normalizedQuery) {
-        setCache((prev) => ({ ...prev, [sortType]: data }));
-      }
-      setDiscussions(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function loadPublicNotes() {
     try {
@@ -75,24 +41,8 @@ export default function DiscussionBoard() {
   }
 
   useEffect(() => {
-    loadDiscussions("all");
-  }, []);
-
-  useEffect(() => {
     loadPublicNotes();
   }, []);
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      loadDiscussions(sort, query);
-    }, 250);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [sort, query]);
-
-  function handleOpenDiscussion(id) {
-    navigate(`/discussion-board/${id}`);
-  }
 
   async function handleShareNote() {
     if (!selectedNoteId || sharingNote) {
@@ -122,10 +72,38 @@ export default function DiscussionBoard() {
     }
   }
 
+  async function handleImportPublicNote(noteId) {
+    if (importingNoteId) {
+      return;
+    }
+
+    setImportingNoteId(noteId);
+    setNotesError("");
+    try {
+      await importPublicNote(noteId);
+    } catch (err) {
+      setNotesError(err.message);
+    } finally {
+      setImportingNoteId(null);
+    }
+  }
+
+  function handleViewNote(noteId) {
+    navigate(`/public-notes/${noteId}`);
+  }
+
+  const filteredPublicNotes = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) {
+      return publicNotes;
+    }
+    return publicNotes.filter((note) => (note.title || "").toLowerCase().includes(normalizedQuery));
+  }, [publicNotes, query]);
+
   return (
     <>
       <Helmet>
-        <title> Discussion Board </title>
+        <title>Public Notes</title>
       </Helmet>
 
       <main className="main main--discussion">
@@ -144,23 +122,19 @@ export default function DiscussionBoard() {
                   className="discussionTitle__iconImage discussionTitle__iconImage--dark"
                 />
               </div>
-              <h1>Discussion Board</h1>
+              <h1>Public Notes</h1>
             </div>
             <p className="discussionTop__subtitle">
-              Discussions stay conversational. Public notes live in their own section below.
+              Share notes with the community, search by title, and import useful notes into your own workspace.
             </p>
           </div>
-
-          <Link to="/discussion-board/new" className="discussionTop__button discussionTop__button--link">
-            + New Discussion
-          </Link>
         </section>
 
         <section className="discussionBoardSection">
           <div className="discussionBoardSection__header">
             <div>
-              <h2>Public Notes</h2>
-              <p>Share full notes separately from discussion posts while keeping the note layout and attachments.</p>
+              <h2>Share Your Notes</h2>
+              <p>Publish one of your notes to the public forum so other students can read and import it.</p>
             </div>
             <div className="discussionBoardSection__actions">
               <select
@@ -193,23 +167,40 @@ export default function DiscussionBoard() {
               <p className="discussionCard__text">{notesError}</p>
             </article>
           )}
+        </section>
 
-          <div className="boardNoteList">
-            {loadingPublicNotes && (
-              <article className="discussionCard">
-                <h2>Loading public notes...</h2>
-                <p className="discussionCard__text">Fetching shared notes.</p>
-              </article>
-            )}
+        <section className="discussionSearch">
+          <label className="discussionSearch__field">
+            <span>Search public notes by title</span>
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search by note title"
+            />
+          </label>
+        </section>
 
-            {!loadingPublicNotes && publicNotes.length === 0 && !notesError && (
-              <article className="discussionCard">
-                <h2>No public notes yet</h2>
-                <p className="discussionCard__text">Share one of your notes above to start the public notes feed.</p>
-              </article>
-            )}
+        <section className="discussionList">
+          {loadingPublicNotes && (
+            <article className="discussionCard">
+              <h2>Loading public notes...</h2>
+              <p className="discussionCard__text">Fetching shared notes.</p>
+            </article>
+          )}
 
-            {!loadingPublicNotes && publicNotes.map((note) => (
+          {!loadingPublicNotes && filteredPublicNotes.length === 0 && !notesError && (
+            <article className="discussionCard">
+              <h2>{query.trim() ? "No public notes found" : "No public notes yet"}</h2>
+              <p className="discussionCard__text">
+                {query.trim()
+                  ? "Try another title search or clear the search field."
+                  : "Share one of your notes above to start the public notes feed."}
+              </p>
+            </article>
+          )}
+
+          {!loadingPublicNotes &&
+            filteredPublicNotes.map((note) => (
               <article key={note.id} className="discussionCard boardNoteCard">
                 <div className="discussionCard__header">
                   <img
@@ -230,50 +221,18 @@ export default function DiscussionBoard() {
                   </div>
                 </div>
 
-                <div className="boardNoteCard__content">
-                  {(note.content || "").split("\n").map((line, index) => (
-                    <p key={`${note.id}-${index}`}>{line || "\u00A0"}</p>
-                  ))}
-                </div>
+                <p className="discussionCard__text">{note.description || "No description available."}</p>
 
-                {note.fileName && (
-                  <div className="noteDetail__attachments">
-                    <h3>Attachment</h3>
-                    <a
-                      href={`/api/notes/${note.id}/download`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="noteDetail__downloadLink"
-                    >
-                      {note.fileName}
-                    </a>
+                <div className="discussionCard__footer">
+                  <button
+                    type="button"
+                    onClick={() => handleViewNote(note.id)}
+                    className="discussionCard__action"
+                  >
+                    View Note
+                  </button>
 
-                    {note.fileContentType?.startsWith("image/") && (
-                      <img
-                        src={`/api/notes/${note.id}/preview`}
-                        alt={note.fileName}
-                        className="noteDetail__imagePreview"
-                      />
-                    )}
-
-                    {note.fileContentType === "application/pdf" && (
-                      <iframe
-                        src={`/api/notes/${note.id}/preview`}
-                        className="noteDetail__pdfPreview"
-                        title={`Preview for ${note.title}`}
-                      />
-                    )}
-
-                    {note.fileContentType?.includes("word") && (
-                      <p className="noteDetail__noPreview">
-                        Word documents cannot be previewed. Use the download link above.
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {note.ownedByCurrentUser && (
-                  <div className="discussionCard__footer">
+                  {note.ownedByCurrentUser ? (
                     <button
                       type="button"
                       onClick={() => handleRemovePublicNote(note.id)}
@@ -281,103 +240,18 @@ export default function DiscussionBoard() {
                     >
                       Remove from Public Notes
                     </button>
-                  </div>
-                )}
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="discussionFilters">
-          {["all", "trending", "recent"].map((type) => (
-            <button
-              key={type}
-              type="button"
-              className={`discussionFilters__chip ${
-                sort === type ? "discussionFilters__chip--active" : ""
-              }`}
-              onClick={() => {
-                setSort(type);
-              }}
-            >
-              {type === "all"
-                ? "All Discussions"
-                : type.charAt(0).toUpperCase() + type.slice(1)}
-            </button>
-          ))}
-        </section>
-
-        <section className="discussionSearch">
-          <label className="discussionSearch__field">
-            <span>Search discussions</span>
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search by title or description"
-            />
-          </label>
-        </section>
-
-        <section className="discussionList">
-          {loading && !cache[sort] && (
-            <article className="discussionCard">
-              <h2>Loading discussions...</h2>
-              <p className="discussionCard__text">Fetching current posts.</p>
-            </article>
-          )}
-
-          {error && (
-            <article className="discussionCard">
-              <h2>Error</h2>
-              <p className="discussionCard__text">{error}</p>
-            </article>
-          )}
-
-          {!loading && discussions.length === 0 && (
-            <article className="discussionCard">
-              <h2>{query.trim() ? "No discussions found" : "No discussions yet"}</h2>
-              <p className="discussionCard__text">
-                {query.trim()
-                  ? "Try another search or clear the search field."
-                  : "Start the discussion with the + New Discussion button."}
-              </p>
-            </article>
-          )}
-
-          {!loading &&
-            discussions.map((discussion) => (
-              <article key={discussion.id} className="discussionCard">
-                <div className="discussionCard__header">
-                  <img
-                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
-                      discussion.authorName
-                    )}&background=9CC4FF&color=#1d4fae`}
-                    alt={discussion.authorName}
-                    className="discussionCard__avatar"
-                  />
-
-                  <div>
-                    <h2>{discussion.title}</h2>
-                    <p className="discussionCard__author">by {discussion.authorName}</p>
-                  </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleImportPublicNote(note.id)}
+                      className="discussionCard__action"
+                      disabled={importingNoteId === note.id}
+                    >
+                      {importingNoteId === note.id ? "Importing..." : "Import to My Notes"}
+                    </button>
+                  )}
                 </div>
 
-                <p className="discussionCard__text">{discussion.description}</p>
-
-                <div className="discussionCard__footer">
-                  <div className="discussionCard__stats discussionCard__meta">
-                    <span>{discussion.likeCount} likes</span>
-                    <span>{discussion.commentCount} comments</span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleOpenDiscussion(discussion.id)}
-                    className="discussionCard__action"
-                  >
-                    View Discussion
-                  </button>
-                </div>
               </article>
             ))}
         </section>

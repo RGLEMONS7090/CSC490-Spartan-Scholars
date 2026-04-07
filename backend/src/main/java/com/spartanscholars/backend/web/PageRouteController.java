@@ -37,6 +37,11 @@ public class PageRouteController {
         return "forward:/explore-topics.html";
     }
 
+    @GetMapping("/UNCG-Planner")
+    public String uncgPlanner() {
+        return "forward:/explore-topics.html";
+    }
+
     @GetMapping("/discussion-board")
     public String discussionBoard() {
         return "forward:/discussion-board.html";
@@ -49,6 +54,11 @@ public class PageRouteController {
 
     @GetMapping("/analytics")
     public String analytics() {
+        return "forward:/analytics.html";
+    }
+
+    @GetMapping("/Productivity-Hub")
+    public String productivityHub() {
         return "forward:/analytics.html";
     }
 

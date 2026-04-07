@@ -45,6 +45,11 @@ export async function fetchPublicBoardNotes() {
   return response.json();
 }
 
+export async function fetchPublicNote(noteId) {
+  const response = await apiFetch(`/api/notes/public/${noteId}`);
+  return response.json();
+}
+
 export async function publishNoteToBoard(noteId) {
   const response = await apiFetch(`/api/notes/${noteId}/publish-to-board`, {
     method: "POST",
@@ -64,6 +69,13 @@ export async function importNoteByPassword(password) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ password }),
+  });
+  return response.json();
+}
+
+export async function importPublicNote(noteId) {
+  const response = await apiFetch(`/api/notes/${noteId}/import`, {
+    method: "POST",
   });
   return response.json();
 }

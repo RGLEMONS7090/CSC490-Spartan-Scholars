@@ -29,6 +29,8 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
 
     Optional<Note> findByShareCode(String shareCode);
 
+    Optional<Note> findByIdAndPublishedToBoardTrue(Long id);
+
     List<Note> findByPublishedToBoardTrueOrderByPublishedToBoardAtDesc();
 
     boolean existsByShareCode(String shareCode);

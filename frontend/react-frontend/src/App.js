@@ -33,11 +33,9 @@ import QuizFlashcardEditor from "./pages/quizzes/quiz-flashcard-editor";
 import QuizTestPlayer from "./pages/quizzes/quiz-test-player";
 import QuizFlashcardPlayer from "./pages/quizzes/quiz-flashcard-player";
 
-import DiscussionNew from "./pages/discussion/discussion-new";
-import DiscussionView from "./pages/discussion/discussion-view";
-
 import NoteEditor from "./pages/notes_pages/notebook-editor";
 import NoteView from "./pages/notes_pages/note-detail";
+import PublicNoteView from "./pages/public-note-view";
 
 export default function App() {
   
@@ -50,7 +48,11 @@ export default function App() {
             <Route element={<AppLayout />}>
               <Route path="/" element={<Index />} />
               <Route path="/discussion-board" element={<DiscussionBoard />} />
+              <Route path="/public-notes" element={<DiscussionBoard />} />
+              <Route path="/public-notes/:id" element={<PublicNoteView />} />
+              <Route path="/Productivity-Hub" element={<Analytics />} />
               <Route path="/analytics" element={<Analytics />} />
+              <Route path="/UNCG-Planner" element={<ExploreTopics />} />
               <Route path="/explore-topics" element={<ExploreTopics />} />
               <Route path="/study-groups" element={<StudyGroups />} />
               <Route path="/study-groups/:id" element={<StudyGroupView />} />
@@ -66,8 +68,6 @@ export default function App() {
               <Route path="/take-quizzes/create/flashcards" element={<QuizFlashcardEditor />} />
               <Route path="/take-quizzes/:id" element={<QuizTestPlayer />} />
               <Route path="/take-quizzes/:id/flashcards" element={<QuizFlashcardPlayer />} />
-              <Route path="/discussion-board/new" element={<DiscussionNew />} />
-              <Route path="/discussion-board/:id" element={<DiscussionView />} />
               <Route path="/notes/new" element={<NoteEditor />} />
               <Route path="/notes/edit/:id" element={<NoteEditor />} /> 
               <Route path="/notes/:id" element={<NoteView />} />

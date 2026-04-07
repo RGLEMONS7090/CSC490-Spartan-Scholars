@@ -15,9 +15,9 @@ const featureCards = [
   },
   {
     icon: discussionIcon,
-    title: "Discussion Board",
-    text: "Ask questions, reply to classmates, and keep course conversations moving without losing context.",
-    link: "/discussion-board",
+    title: "Public Notes",
+    text: "Browse shared notes from other students, search by title, and import useful material into your own notes.",
+    link: "/public-notes",
   },
   {
     icon: aiIcon,

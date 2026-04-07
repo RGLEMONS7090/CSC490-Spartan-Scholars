@@ -126,6 +126,14 @@ public class NoteService {
         return toResponse(note);
     }
 
+    @Transactional(readOnly = true)
+    public NoteResponse getPublicBoardNote(User user, Long noteId) {
+        requireUser(user);
+        Note note = noteRepository.findByIdAndPublishedToBoardTrue(noteId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Public note not found."));
+        return toResponse(note);
+    }
+
     @Transactional
     public NoteResponse create(
             User user,
@@ -201,6 +209,13 @@ public class NoteService {
         Note imported = cloneNote(source, authenticated);
         notifyOwnerOfImport(source, authenticated);
         return toResponse(noteRepository.save(imported));
+    }
+
+    @Transactional
+    public NoteResponse importPublicBoardNote(User user, Long noteId) {
+        Note source = noteRepository.findByIdAndPublishedToBoardTrue(noteId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Public note not found."));
+        return importFromExisting(user, source);
     }
 
     @Transactional(readOnly = true)
@@ -396,7 +411,7 @@ return note;
                 note.getId(),
                 note.getTitle(),
                 note.getCategory(),
-                note.getContent(),
+                buildPreview(note.getContent()),
                 note.getFileName(),
                 note.getFileContentType(),
                 note.getFileName() != null && !note.getFileName().isBlank(),
