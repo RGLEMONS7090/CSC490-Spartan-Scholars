@@ -3217,6 +3217,8 @@ body{
 .groupMessage p{
   margin: 0;
   line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .groupChatComposer{
