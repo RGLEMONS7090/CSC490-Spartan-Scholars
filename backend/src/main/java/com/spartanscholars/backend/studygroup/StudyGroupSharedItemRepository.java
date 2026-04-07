@@ -12,4 +12,6 @@ public interface StudyGroupSharedItemRepository extends JpaRepository<StudyGroup
 
     @EntityGraph(attributePaths = {"group", "sharedBy", "note", "quiz"})
     Optional<StudyGroupSharedItem> findByIdAndGroupId(Long id, Long groupId);
+
+    void deleteByQuizId(Long quizId);
 }

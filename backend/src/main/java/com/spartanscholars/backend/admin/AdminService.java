@@ -23,6 +23,7 @@ import com.spartanscholars.backend.studygroup.StudyGroup;
 import com.spartanscholars.backend.studygroup.StudyGroupMemberRepository;
 import com.spartanscholars.backend.studygroup.StudyGroupMessageRepository;
 import com.spartanscholars.backend.studygroup.StudyGroupRepository;
+import com.spartanscholars.backend.studygroup.StudyGroupSharedItemRepository;
 import com.spartanscholars.backend.user.User;
 import com.spartanscholars.backend.user.UserRepository;
 import java.util.List;
@@ -49,6 +50,7 @@ public class AdminService {
     private final StudyGroupRepository studyGroupRepository;
     private final StudyGroupMemberRepository studyGroupMemberRepository;
     private final StudyGroupMessageRepository studyGroupMessageRepository;
+    private final StudyGroupSharedItemRepository studyGroupSharedItemRepository;
 
     @Value("${app.admin.password:UNCG2026SpartanScholars}")
     private String adminPassword;
@@ -64,7 +66,8 @@ public class AdminService {
             DiscussionLikeRepository discussionLikeRepository,
             StudyGroupRepository studyGroupRepository,
             StudyGroupMemberRepository studyGroupMemberRepository,
-            StudyGroupMessageRepository studyGroupMessageRepository
+            StudyGroupMessageRepository studyGroupMessageRepository,
+            StudyGroupSharedItemRepository studyGroupSharedItemRepository
     ) {
         this.jwtService = jwtService;
         this.userRepository = userRepository;
@@ -77,6 +80,7 @@ public class AdminService {
         this.studyGroupRepository = studyGroupRepository;
         this.studyGroupMemberRepository = studyGroupMemberRepository;
         this.studyGroupMessageRepository = studyGroupMessageRepository;
+        this.studyGroupSharedItemRepository = studyGroupSharedItemRepository;
     }
 
     public AdminSessionResponse createAdminSession(User user, AdminPasswordRequest request) {
@@ -153,6 +157,7 @@ public class AdminService {
         StudyQuiz quiz = studyQuizRepository.findByIdAndOwnerId(quizId, userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Quiz not found."));
         quizAttemptRepository.deleteByQuizId(quizId);
+        studyGroupSharedItemRepository.deleteByQuizId(quizId);
         studyQuizRepository.delete(quiz);
     }
 
@@ -172,6 +177,7 @@ public class AdminService {
 
         for (StudyQuiz quiz : studyQuizRepository.findAllByOwnerIdOrderByUpdatedAtDesc(userId)) {
             quizAttemptRepository.deleteByQuizId(quiz.getId());
+            studyGroupSharedItemRepository.deleteByQuizId(quiz.getId());
             studyQuizRepository.delete(quiz);
         }
         quizAttemptRepository.deleteByUserId(userId);

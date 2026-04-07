@@ -17,6 +17,7 @@ import com.spartanscholars.backend.quiz.dto.QuizShareResponse;
 import com.spartanscholars.backend.quiz.dto.QuizSubmissionRequest;
 import com.spartanscholars.backend.quiz.dto.QuizSubmissionResponse;
 import com.spartanscholars.backend.quiz.dto.QuizSummaryResponse;
+import com.spartanscholars.backend.studygroup.StudyGroupSharedItemRepository;
 import com.spartanscholars.backend.user.User;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -36,6 +37,7 @@ public class QuizService {
 
     private final StudyQuizRepository studyQuizRepository;
     private final QuizAttemptRepository quizAttemptRepository;
+    private final StudyGroupSharedItemRepository sharedItemRepository;
     private final AiService aiService;
     private final NotificationService notificationService;
     private final SecureRandom secureRandom = new SecureRandom();
@@ -43,11 +45,13 @@ public class QuizService {
     public QuizService(
             StudyQuizRepository studyQuizRepository,
             QuizAttemptRepository quizAttemptRepository,
+            StudyGroupSharedItemRepository sharedItemRepository,
             AiService aiService,
             NotificationService notificationService
     ) {
         this.studyQuizRepository = studyQuizRepository;
         this.quizAttemptRepository = quizAttemptRepository;
+        this.sharedItemRepository = sharedItemRepository;
         this.aiService = aiService;
         this.notificationService = notificationService;
     }
@@ -271,6 +275,7 @@ public class QuizService {
     public void deleteQuiz(User user, Long quizId) {
         StudyQuiz quiz = findOwnedQuiz(user, quizId);
         quizAttemptRepository.deleteByQuizId(quizId);
+        sharedItemRepository.deleteByQuizId(quizId);
         studyQuizRepository.delete(quiz);
     }
 
