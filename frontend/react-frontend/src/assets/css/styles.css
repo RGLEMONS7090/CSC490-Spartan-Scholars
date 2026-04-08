@@ -2128,17 +2128,18 @@ body{
 }
 
 .boardNoteCard{
-  height: 100%;
-  display: flex;
-  flex-direction: column;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .boardNoteCard .discussionCard__text{
-  margin-bottom: 16px;
+    margin-bottom: 0;
 }
 
 .boardNoteCard .discussionCard__footer{
-  margin-top: auto;
+    margin-top: auto;
 }
 
 .discussionFilters__chip{
@@ -2192,11 +2193,11 @@ body{
 }
 
 .discussionList{
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 380px));
-  gap: 16px;
-  align-items: start;
-  justify-content: start;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 380px));
+    gap: 16px;
+    align-items: stretch;
+    justify-content: start;
 }
 
 .discussionCard{

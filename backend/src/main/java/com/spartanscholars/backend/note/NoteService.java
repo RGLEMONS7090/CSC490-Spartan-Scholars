@@ -6,6 +6,7 @@ import com.spartanscholars.backend.note.dto.NoteResponse;
 import com.spartanscholars.backend.note.dto.NoteShareResponse;
 import com.spartanscholars.backend.note.dto.NoteSummaryProjection;
 import com.spartanscholars.backend.note.dto.NoteSummaryResponse;
+import com.spartanscholars.backend.note.dto.PublicBoardNoteProjection;
 import com.spartanscholars.backend.note.dto.PublicBoardNoteResponse;
 import com.spartanscholars.backend.notification.NotificationService;
 import com.spartanscholars.backend.user.User;
@@ -221,7 +222,7 @@ public class NoteService {
     @Transactional(readOnly = true)
     public List<PublicBoardNoteResponse> listPublicBoardNotes(User user) {
         User authenticated = requireUser(user);
-        return noteRepository.findByPublishedToBoardTrueOrderByPublishedToBoardAtDesc()
+        return noteRepository.findPublicBoardSummariesOrderByPublishedToBoardAtDesc()
                 .stream()
                 .map(note -> toPublicBoardResponse(note, authenticated))
                 .toList();
@@ -406,19 +407,19 @@ return note;
         );
     }
 
-    private PublicBoardNoteResponse toPublicBoardResponse(Note note, User authenticated) {
+    private PublicBoardNoteResponse toPublicBoardResponse(PublicBoardNoteProjection note, User authenticated) {
         return new PublicBoardNoteResponse(
                 note.getId(),
                 note.getTitle(),
                 note.getCategory(),
-                buildPreview(note.getContent()),
+                buildPreview(note.getPreview()),
                 note.getFileName(),
                 note.getFileContentType(),
                 note.getFileName() != null && !note.getFileName().isBlank(),
-                note.isImported(),
-                note.isPublishedToBoard(),
-                note.getOwner().getId().equals(authenticated.getId()),
-                note.getOwner().getName(),
+                note.getImported(),
+                note.getPublishedToBoard(),
+                note.getOwnerId().equals(authenticated.getId()),
+                note.getAuthorName(),
                 note.getCreatedAt(),
                 note.getUpdatedAt(),
                 note.getPublishedToBoardAt()

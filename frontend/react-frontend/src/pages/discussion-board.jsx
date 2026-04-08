@@ -100,6 +100,16 @@ export default function DiscussionBoard() {
     return publicNotes.filter((note) => (note.title || "").toLowerCase().includes(normalizedQuery));
   }, [publicNotes, query]);
 
+  function getVisibleDescription(note) {
+    const description = (note.description || "").trim();
+    if (!description) {
+      return "";
+    }
+
+    const letterCount = Array.from(description).filter((character) => /[A-Za-z]/.test(character)).length;
+    return letterCount >= 3 ? description : "";
+  }
+
   return (
     <>
       <Helmet>
@@ -200,60 +210,64 @@ export default function DiscussionBoard() {
           )}
 
           {!loadingPublicNotes &&
-            filteredPublicNotes.map((note) => (
-              <article key={note.id} className="discussionCard boardNoteCard">
-                <div className="discussionCard__header">
-                  <img
-                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
-                      note.authorName
-                    )}&background=CEE8D7&color=1d5c3a`}
-                    alt={note.authorName}
-                    className="discussionCard__avatar"
-                  />
+            filteredPublicNotes.map((note) => {
+              const visibleDescription = getVisibleDescription(note);
 
-                  <div className="boardNoteCard__titleWrap">
-                    <h2>{note.title}</h2>
-                    <p className="discussionCard__author">by {note.authorName}</p>
-                    <p className="boardNoteCard__meta">
-                      Shared {new Date(note.publishedToBoardAt || note.updatedAt).toLocaleString()}
-                    </p>
-                    {note.category && <p className="noteDetails__category">{note.category}</p>}
+              return (
+                <article key={note.id} className="discussionCard boardNoteCard">
+                  <div className="discussionCard__header">
+                    <img
+                      src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                        note.authorName
+                      )}&background=CEE8D7&color=1d5c3a`}
+                      alt={note.authorName}
+                      className="discussionCard__avatar"
+                    />
+
+                    <div className="boardNoteCard__titleWrap">
+                      <h2>{note.title}</h2>
+                      <p className="discussionCard__author">by {note.authorName}</p>
+                      <p className="boardNoteCard__meta">
+                        Shared {new Date(note.publishedToBoardAt || note.updatedAt).toLocaleString()}
+                      </p>
+                      {note.category && <p className="noteDetails__category">{note.category}</p>}
+                    </div>
                   </div>
-                </div>
 
-                <p className="discussionCard__text">{note.description || "No description available."}</p>
+                  {visibleDescription && <p className="discussionCard__text">{visibleDescription}</p>}
 
-                <div className="discussionCard__footer">
-                  <button
-                    type="button"
-                    onClick={() => handleViewNote(note.id)}
-                    className="discussionCard__action"
-                  >
-                    View Note
-                  </button>
-
-                  {note.ownedByCurrentUser ? (
+                  <div className="discussionCard__footer">
                     <button
                       type="button"
-                      onClick={() => handleRemovePublicNote(note.id)}
-                      className="discussionCard__action discussionCard__action--danger"
-                    >
-                      Remove from Public Notes
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleImportPublicNote(note.id)}
+                      onClick={() => handleViewNote(note.id)}
                       className="discussionCard__action"
-                      disabled={importingNoteId === note.id}
                     >
-                      {importingNoteId === note.id ? "Importing..." : "Import to My Notes"}
+                      View Note
                     </button>
-                  )}
-                </div>
 
-              </article>
-            ))}
+                    {note.ownedByCurrentUser ? (
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePublicNote(note.id)}
+                        className="discussionCard__action discussionCard__action--danger"
+                      >
+                        Remove from Public Notes
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleImportPublicNote(note.id)}
+                        className="discussionCard__action"
+                        disabled={importingNoteId === note.id}
+                      >
+                        {importingNoteId === note.id ? "Importing..." : "Import to My Notes"}
+                      </button>
+                    )}
+                  </div>
+
+                </article>
+              );
+            })}
         </section>
       </main>
     </>
