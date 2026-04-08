@@ -10,21 +10,21 @@ import logoDark from "../assets/images/dark_mode_logo.png";
 import logoDarkText from "../assets/images/dark_mode_text.png";
 
 const proofItems = [
-  { label: "Notes, quizzes, groups", value: "All-in-one" },
-  { label: "Built for students", value: "Not boring" },
-  { label: "AI support when stuck", value: "Instant" },
+  { label: "Notes, quizzes, groups", value: "All-In-One" },
+  { label: "Built for Students", value: "Not Boring" },
+  { label: "Support through AI", value: "Instant" },
 ];
 
 const featureCards = [
   {
     icon: notesIcon,
     title: "Capture everything without losing the thread",
-    text: "Keep class notes, uploaded materials, and organized summaries in one workspace instead of scattering them across tabs and docs.",
+    text: "Keep class notes, uploaded materials, and organized summaries in one workspace instead of having them scattered across tabs.",
   },
   {
     icon: aiIcon,
-    title: "Turn study material into action fast",
-    text: "Generate flashcards, quizzes, and sharper summaries from the content you already have so studying starts faster.",
+    title: "Quickly turn study material into action",
+    text: "Generate flashcards, quizzes, and clear summaries from the content you already have to start studying faster.",
   },
   {
     icon: discussionIcon,
@@ -39,7 +39,7 @@ const steps = [
   "Join groups, browse public notes, and keep your work moving each week.",
 ];
 
-const vibeTags = ["No more tab chaos", "Private study groups", "AI study support"];
+const vibeTags = ["No More Tab Chaos", "Private Study Groups", "AI Study Support"];
 
 export default function Landing() {
   return (
@@ -151,7 +151,7 @@ export default function Landing() {
         <section className="landingSection">
           <div className="landingSection__intro">
             <span className="landingSection__tag">Why sign up</span>
-            <h2>Built for the student who wants to feel more together this semester.</h2>
+            <h2>Built for the student who want to become more organized and collaborate with others this semester.</h2>
           </div>
 
           <div className="landingFeatureGrid">
@@ -170,10 +170,10 @@ export default function Landing() {
         <section className="landingSection landingSection--split">
           <article className="landingStoryCard">
             <span className="landingSection__tag">What it feels like</span>
-            <h2>Less scrambling. More studying with a plan.</h2>
+            <h2>Less Scrambling. More Studying with a Plan.</h2>
             <p>
               Instead of opening a notes app, a calendar app, a flashcard app, a public note feed, and an AI tab, you work from
-              one system that already knows what you are studying.
+              one system that contains everything you are already studying.
             </p>
           </article>
 

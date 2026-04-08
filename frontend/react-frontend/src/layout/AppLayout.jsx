@@ -13,6 +13,14 @@ import logoDark from "../assets/images/dark_mode_logo.png";
 import logoDarkText from "../assets/images/dark_mode_text.png";
 import ai_icon from "../assets/images/ai_icon.png";
 
+import notes_icon from "../assets/images/notes_icon.png";
+import study_group from "../assets/images/study_group_icon.png";
+import quiz_icon from "../assets/images/quiz_icon.png";
+import discussion_icon from "../assets/images/discussion_icon.png";
+
+import class_planner from "../assets/images/explore_topics_icon.png";
+import productivity from "../assets/images/analytics_icon.png";
+
 export default function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -277,40 +285,58 @@ export default function AppLayout() {
       <div id="appShell" className={`shell ${collapsed ? "shell--collapsed" : ""}`}>
         <aside id="appSidebar" className="sidebar">
           <Link className="askAiBtn" to="/ai-assistant">
-            <span className="askAiBtn__spark">
-              <img 
-                src={ai_icon}
-                alt="AI Icon"
-              />
-            </span>
-            Ask AI
+              <span className="askAiBtn__icon">
+                <img 
+                  src={ai_icon}
+                  alt="AI Icon"
+                />
+              </span>
+            <span className="askAiBtn__label"> Ask AI </span>
           </Link>
 
           <hr className="sidebar__divider" />
 
           <nav className="nav">
             <NavLink to="/notes" className={({ isActive }) => "nav__item" + (isActive ? " nav__item--active" : "")}>
-              My Notes
+              <span className="nav__icon">
+                <img src={notes_icon} alt=""/>
+              </span>
+              <span className="nav__label"> My Notes </span>
             </NavLink>
 
             <NavLink to="/study-groups" className={({ isActive }) => "nav__item" + (isActive ? " nav__item--active" : "")}>
-              Study Groups
+              <span className = "nav__icon">
+                <img src={study_group} alt="Study Group Icon"/>
+              </span>
+              <span className="nav__label"> Study Groups </span>
             </NavLink>
 
             <NavLink to="/take-quizzes" className={({ isActive }) => "nav__item" + (isActive ? " nav__item--active" : "")}>
-              Take Quizzes
+              <span className= "nav__icon">
+                <img src={quiz_icon} alt="Quizzes"/>
+              </span>
+              <span className="nav__label"> Take Quizzes </span>
             </NavLink>
 
             <NavLink to="/UNCG-Planner" className={({ isActive }) => "nav__item" + (isActive ? " nav__item--active" : "")}>
-              UNCG Planner
+              <span className="nav__icon">
+                <img src={class_planner} alt="Planner"/>
+              </span>
+              <span className="nav__label"> UNCG Planner </span>
             </NavLink>
 
             <NavLink to="/public-notes" className={({ isActive }) => "nav__item" + (isActive ? " nav__item--active" : "")}>
-              Public Notes
+              <span className="nav__icon">
+                <img src={discussion_icon} alt="Discussion"/>
+              </span>
+              <span className="nav__label"> Public Notes </span>
             </NavLink>
 
             <NavLink to="/Productivity-Hub" className={({ isActive }) => "nav__item" + (isActive ? " nav__item--active" : "")}>
-              Productivity Hub
+              <span className="nav__icon">
+                <img src={productivity} alt="Productivity Hub"/>
+              </span>
+              <span className="nav__label"> Productivity Hub </span>
             </NavLink>
           </nav>
         </aside>

@@ -96,11 +96,14 @@ body{
 .authPage__layout{
   min-height: 100vh;
   display: grid;
-  grid-template-columns: minmax(320px, 1.1fr) minmax(360px, 520px);
+  grid-template-columns: 1fr 1fr;
+  /*grid-template-columns: minmax(320px, 1.1fr) minmax(360px, 520px); */
+  margin: 0 auto;
+  place-items: center;
 }
 
 .authPage__layout--reverse{
-  grid-template-columns: minmax(360px, 520px) minmax(320px, 1.1fr);
+  grid-template-columns: minmax(360px, 1fr) minmax(320px, 1.1fr);
 }
 
 .authHero,
@@ -111,13 +114,18 @@ body{
   padding: 48px 24px;
 }
 
+.authCardWrap{
+  width: 600px;
+  margin: 0px;
+}
+
 .authHero{
   position: relative;
 }
 
 .authHero__panel{
-  width: min(100%, 620px);
-  padding: 56px;
+  width: min(100%, 600px);
+  padding: 35px;
   border-radius: 36px;
   color: var(--text);
   background: rgba(255,255,255,.28);
@@ -243,6 +251,7 @@ body{
 .authCard a{
   color: var(--btnBlue);
   font-weight: 600;
+  text-decoration: none;
 }
 
 /* Topbar */
@@ -735,16 +744,12 @@ body{
   grid-template-columns: 260px 1fr;
   min-height: calc(100vh - 66px);
   transition: grid-template-columns .25s ease;
+  grid-template-columns: 260px 1fr;
 }
 
-.shell--collapsed{ grid-template-columns: 0 1fr; }
-
-.shell--assistant{
-  grid-template-columns: 280px 1fr;
-}
-
-.shell--assistant.shell--collapsed{
-  grid-template-columns: 0 1fr;
+.shell--collapsed{
+  grid-template-columns: 80px 1fr; 
+  border-right-color: transparent;
 }
 
 .sidebar{
@@ -752,13 +757,9 @@ body{
   border-right: 1px solid var(--sidebarBorder);
   padding: 16px 14px;
   overflow: hidden;
-  min-width: 0;
-  transition: padding .2s ease, border-color .2s ease;
-}
-
-.shell--collapsed .sidebar{
-  padding: 0;
-  border-right-color: transparent;
+  min-width: 80px;
+  transition: padding .25s ease, padding .25s ease;
+  width: 260px;
 }
 
 .askAiBtn{
@@ -1132,6 +1133,11 @@ body{
   letter-spacing: .04em;
   text-transform: uppercase;
 }
+
+.landingSection__tag{
+  margin-bottom: 10px;
+}
+
 
 :root[data-theme="dark"] .landingHero__eyebrow,
 :root[data-theme="dark"] .landingSection__tag{
@@ -2866,6 +2872,15 @@ body{
   background: var(--surface);
   display: flex;
   flex-direction: column;
+  cursor: pointer;
+}
+
+.noteCard__titleRow{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width:0;
 }
 
 .noteCard__actions{
@@ -2907,8 +2922,9 @@ body{
 
 .noteCard h2{
   margin: 0 0 20px;
-  max-width: 82%;
   font-size: 28px;
+  /*max-width: 82%;
+  font-size: 28px; */
 }
 
 .noteCard__text{
@@ -4644,12 +4660,6 @@ body{
   background: #384154;
 }
 
-
-.noteCard {
-  position: relative;
-  cursor: pointer;
-}
-
 .noteCard__overlayLink {
   position: absolute;
   inset: 0;
@@ -4665,15 +4675,6 @@ body{
   z-index: 2; /* Buttons sit ABOVE the overlay */
 }
 
-.noteCard__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  position: relative;
-  z-index: 2;
-}
-
 .noteCard__category {
   font-size: 0.85rem;
   color: var(--textSoft);
@@ -4682,8 +4683,14 @@ body{
 
 .noteCard__title {
   margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 1.25rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .noteCard__actions {
@@ -4974,11 +4981,12 @@ body{
   overflow-wrap: break-word;
 }
 
+/*
 .noteCard h2 {
   white-space: normal;
   word-wrap: break-word;
-  overflow-wrap: break-word;
-}
+  overflow-wrap: break-word; 
+} */
 
 .noteCard__header {
   display: flex;
@@ -6006,8 +6014,7 @@ body{
   font-weight: 700;
 }
 
-.quizCard__tagRow,
-.noteCard__titleRow{
+.quizCard__tagRow {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -6129,4 +6136,288 @@ body{
   .plannerRecommendation {
     flex-direction: column;
   }
+}
+
+/* For navigation side bar */
+
+.nav__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+}
+
+.nav__icon img {
+  width: 32px;
+  height: 32px;
+}
+
+.shell--collapsed .nav__label {
+  display: none;
+}
+
+.shell--collapsed .nav__item {
+  justify-content: center;
+  padding: 10px 0;
+}
+
+.shell--collapsed .askAiBtn span:last-child {
+  display: none;
+}
+
+.nav__label {
+  transition: opacity 0.2s ease;
+}
+
+.shell--collapsed .nav__label {
+  opacity: 0;
+}
+
+.shell--collapsed .sidebar {
+  width: 80px;
+  padding: 16px 8px;
+}
+
+.sidebar {
+  min-width: 80px;
+  overflow: hidden;
+}
+
+.shell--collapsed .askAiBtn__label {
+  display: none;
+}
+
+.askAiBtn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.askAiBtn__icon img {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.askAiBtn {
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.sidebar {
+  transition: width .25s ease, padding .25s ease;
+}
+
+.nav__label,
+.askAiBtn__label {
+  opacity: 1;
+  transition: opacity .2s ease;
+}
+
+.shell--collapsed .nav__label,
+.shell--collapsed .askAiBtn__label {
+  opacity: 0;
+}
+
+.nav__item,
+.askAiBtn {
+  transition: padding .25s ease, justify-content .25s ease;
+}
+
+.shell--collapsed .nav__item,
+.shell--collapsed .askAiBtn {
+  padding: 10px 0;
+  justify-content: center;
+}
+
+.shell--collapsed .nav__label,
+.shell--collapsed .askAiBtn__label {
+  transition-delay: .05s;
+}
+
+.noteCard__menuWrapper {
+  position: relative;
+  z-index: 3;
+}
+
+.noteCard__menuBtn {
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+
+.noteCard__menu {
+  position: absolute;
+  top: 28px;
+  right: 0;
+  background: var(--cardBg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 140px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.12);
+  z-index: 10;
+}
+
+.noteCard__menu button {
+  background: none;
+  border: none;
+  padding: 10px 14px;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.noteCard__menu button:hover {
+  background: var(--navHover);
+}
+
+.noteCard__menu button.danger {
+  color: #d33;
+}
+
+/* Wrapper for the 3-dot menu */
+.noteCard__menuWrapper {
+  position: relative;
+  z-index: 5;
+}
+
+/* The 3-dot button */
+.noteCard__menuBtn {
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  padding: 4px 6px;
+  line-height: 1;
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* Dropdown menu container */
+.noteCard__menu {
+  position: absolute;
+  top: 32px; /* adjust to sit closer to the button */
+  right: 0;
+  background: var(--cardBg);
+  border: 1px solid var(--sidebarBorder);
+  border-radius: 10px;
+  padding: 6px 0;
+  min-width: 150px;
+  box-shadow: 0 6px 16px rgba(0,0,0,.18);
+  z-index: 10;
+}
+
+/* Buttons inside the dropdown */
+.noteCard__menu button {
+  background: none;
+  border: none;
+  padding: 12px 16px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600; /* makes them bold */
+  color: var(--text);
+}
+
+/* Hover effect */
+.noteCard__menu button:hover {
+  background: var(--navHover);
+}
+
+/* Danger button */
+.noteCard__menu button.danger {
+  color: #d33;
+  font-weight: 700;
+}
+
+.noteCard__footer {
+  margin-top: 12px;
+}
+
+.noteCard__menuWrapper {
+  position: relative;
+  z-index: 9999;
+}
+
+.noteCard__menuBtn {
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  padding: 4px 6px;
+  line-height: 1;
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* Dropdown pops OUTSIDE the card */
+.noteCard__menu {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  transform: translateY(-100%);
+  background: white;
+  /*var(--cardBg); */
+  border: 1px solid var(--sidebarBorder);
+  border-radius: 10px;
+  padding: 6px 0;
+  min-width: 150px;
+  box-shadow: 0 6px 16px rgba(0,0,0,.18);
+  z-index: 9999;
+}
+
+/* Buttons inside dropdown */
+.noteCard__menu button {
+  background: none;
+  border: none;
+  padding: 12px 16px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 700; /* makes them bold */
+  color: var(--text);
+}
+
+.noteCard__menu button:hover {
+  background: var(--navHover);
+}
+
+.noteCard__menu button.danger {
+  color: #d33;
+}
+
+.deleteModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+}
+
+.deleteModal__content {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  width: 360px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.25);
+  text-align: center;
+}
+
+.deleteModal__actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
 }

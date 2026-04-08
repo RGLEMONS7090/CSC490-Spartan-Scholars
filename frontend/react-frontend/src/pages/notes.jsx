@@ -60,7 +60,7 @@ export default function Notebook(){
   }
 
   async function deleteNote(id) {
-    if (!window.confirm("Delete this note?")) return;
+    /*if (!window.confirm("Delete this note?")) return;*/
     await apiFetch(`/api/notes/${id}`, { method: "DELETE" });
     loadNotes();
   }
