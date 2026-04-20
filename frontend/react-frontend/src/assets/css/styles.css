@@ -6400,7 +6400,7 @@ body{
   cursor: pointer;
   font-size: 0.95rem;
   font-weight: 700; /* makes them bold */
-  color: var(--text);
+  color: #111827;
 }
 
 .noteCard__menu button:hover {
