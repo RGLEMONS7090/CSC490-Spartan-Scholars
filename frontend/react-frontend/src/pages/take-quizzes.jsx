@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { createQuizShare, deleteQuiz, fetchQuizOverview, importQuizByPassword } from "../assets/js/api/quizApi";
+import quizzesLightImage from "../assets/images/light_quizzes.png";
+import quizzesDarkImage from "../assets/images/dark_mode_quizzes.png";
 
 
 export default function TakeQuizzes() {
@@ -87,7 +89,18 @@ export default function TakeQuizzes() {
       <main className="main main--quizzes">
         <section className="quizzesHeader">
           <div className="quizzesHeader__title">
-            <div className="quizzesHeader__icon">Q</div>
+            <div className="notesHeader__icon notesHeader__icon--image" aria-hidden="true">
+              <img
+                src={quizzesLightImage}
+                className="pageHeader__logo pageHeader__logo--quizzes pageHeader__logo--light"
+                alt=""
+              />
+              <img
+                src={quizzesDarkImage}
+                className="pageHeader__logo pageHeader__logo--quizzes pageHeader__logo--dark"
+                alt=""
+              />
+            </div>
             <div>
               <h1>Take Quizzes</h1>
               <p>Create test quizzes or flashcard quizzes, then take them here.</p>

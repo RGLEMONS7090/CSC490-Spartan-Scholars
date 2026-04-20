@@ -8,8 +8,8 @@ import {
   publishNoteToBoard,
   unpublishNoteFromBoard,
 } from "../assets/js/api/notesApi";
-import discussionLightImage from "../assets/images/light_dicsussion.png";
-import discussionDarkImage from "../assets/images/dark_mode_dicsussion.png";
+import publicNotesLightImage from "../assets/images/light_public_notes.png";
+import publicNotesDarkImage from "../assets/images/dark_public_notes.png";
 
 export default function DiscussionBoard() {
   const [publicNotes, setPublicNotes] = useState([]);
@@ -120,16 +120,16 @@ export default function DiscussionBoard() {
         <section className="discussionTop">
           <div>
             <div className="discussionTitle">
-              <div className="discussionTitle__icon" aria-hidden="true">
+              <div className="notesHeader__icon notesHeader__icon--image" aria-hidden="true">
                 <img
-                  src={discussionLightImage}
+                  src={publicNotesLightImage}
                   alt=""
-                  className="discussionTitle__iconImage discussionTitle__iconImage--light"
+                  className="pageHeader__logo pageHeader__logo--light"
                 />
                 <img
-                  src={discussionDarkImage}
+                  src={publicNotesDarkImage}
                   alt=""
-                  className="discussionTitle__iconImage discussionTitle__iconImage--dark"
+                  className="pageHeader__logo pageHeader__logo--dark"
                 />
               </div>
               <h1>Public Notes</h1>

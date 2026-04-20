@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { fetchProfile } from "../assets/js/api/profileApi";
 import { createTask, deleteTask, fetchTasks, updateTask } from "../assets/js/api/taskApi";
 import { createEvent, deleteEvent, fetchEvents } from "../assets/js/api/eventApi";
+import productivityHubLightImage from "../assets/images/light_productivity_hub.png";
+import productivityHubDarkImage from "../assets/images/dark_productivity_hub.png";
 
 function todayString() {
   return new Date().toISOString().slice(0, 10);
@@ -244,7 +246,18 @@ export default function Analytics() {
       <main className="main main--quizzes">
         <section className="notesHeader">
           <div className="quizzesHeader__title">
-            <div className="quizzesHeader__icon">A</div>
+            <div className="notesHeader__icon notesHeader__icon--image" aria-hidden="true">
+              <img
+                src={productivityHubLightImage}
+                alt=""
+                className="pageHeader__logo pageHeader__logo--productivity pageHeader__logo--light"
+              />
+              <img
+                src={productivityHubDarkImage}
+                alt=""
+                className="pageHeader__logo pageHeader__logo--productivity pageHeader__logo--dark"
+              />
+            </div>
             <div>
               <h1>Productivity Hub</h1>
               <p>

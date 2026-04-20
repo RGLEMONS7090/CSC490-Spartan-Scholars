@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { createStudyGroup, fetchStudyGroups, joinPrivateStudyGroup, joinStudyGroup } from "../assets/js/api/studyGroupsApi";
+import studyGroupsLightImage from "../assets/images/light_study.png";
+import studyGroupsDarkImage from "../assets/images/dark_mode_study.png";
 
 function formatUpdatedAt(value) {
   if (!value) {
@@ -107,7 +109,18 @@ export default function StudyGroups() {
       <main className="main main--groups">
         <section className="groupsHeader">
           <div className="groupsHeader__title">
-            <div className="groupsHeader__icon">G</div>
+            <div className="notesHeader__icon notesHeader__icon--image" aria-hidden="true">
+              <img
+                src={studyGroupsLightImage}
+                className="pageHeader__logo pageHeader__logo--light"
+                alt=""
+              />
+              <img
+                src={studyGroupsDarkImage}
+                className="pageHeader__logo pageHeader__logo--dark"
+                alt=""
+              />
+            </div>
             <div>
               <h1>Study Groups</h1>
               <p>Find a group by course or topic, join it, and chat with other students.</p>
