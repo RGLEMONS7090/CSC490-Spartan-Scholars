@@ -175,8 +175,6 @@ CSC490-Spartan-Scholars/
 
 ## Screenshots
 
-Add screenshots to a `screenshots/` folder and update these placeholders before final submission or portfolio use.
-
 ### Landing Page
 
 ![Landing Page](screenshots/landing-page.png)
