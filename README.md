@@ -191,7 +191,7 @@ Add screenshots to a `screenshots/` folder and update these placeholders before 
 
 ### Notes and Quizzes
 
-![Notes and Quizzes](screenshots/notes-and-quizzes.png)
+![Notes and Quizzes](screenshots/notes.png)
 
 ### Study Groups
 
