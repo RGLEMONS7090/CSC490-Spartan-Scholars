@@ -208,4 +208,4 @@ CSC490-Spartan-Scholars/
 
 ## Project Status
 
-Spartan Scholars is an active capstone project. The current version supports the core academic workflows needed for demonstration, including authentication, AI assistance, notes, quizzes, discussion boards, study groups, productivity tracking, and administrative review tools.
+Spartan Scholars is a completed V1.0 capstone project. The current version supports the core academic workflows needed for demonstration, including authentication, AI assistance, notes, quizzes, discussion boards, study groups, productivity tracking, and administrative review tools.
