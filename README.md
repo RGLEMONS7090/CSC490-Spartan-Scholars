@@ -64,7 +64,7 @@ Make sure the following are installed:
 ### 1. Clone the Repository
 
 ```powershell
-git clone <[repository-url](https://github.com/RGLEMONS7090/CSC490-Spartan-Scholars.git)>
+git clone <(https://github.com/RGLEMONS7090/CSC490-Spartan-Scholars.git)>
 cd CSC490-Spartan-Scholars
 ```
 
