@@ -1,0 +1,121 @@
+<!-- frontend/index.html -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Spartan Scholars</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar__left">
+      <button id="sidebarToggle" class="iconBtn" type="button" aria-label="Toggle sidebar">&#9776;</button>
+      <a class="brand brand--link" href="/" aria-label="Go to Spartan Scholars home">
+        <div class="brand__icon">
+          <img class="brand__logo brand__logo--light" src="assets/ChatGPT Image Mar 2, 2026, 02_52_17 PM-Photoroom.png" alt="Spartan Scholars logo" />
+          <img class="brand__logo brand__logo--dark" src="assets/ChatGPT Image Mar 2, 2026, 02_54_16 PM-Photoroom.png" alt="Spartan Scholars logo" />
+        </div>
+        <div class="brand__name">
+          <img class="brand__wordmark brand__wordmark--light" src="assets/ChatGPT Image Mar 2, 2026, 02_52_21 PM-Photoroom.png" alt="Spartan Scholars" />
+          <img class="brand__wordmark brand__wordmark--dark" src="assets/ChatGPT Image Mar 2, 2026, 03_06_15 PM-Photoroom.png" alt="Spartan Scholars" />
+        </div>
+      </a>
+    </div>
+
+    <div class="topbar__right">
+      <button class="iconBtn" type="button" data-theme-toggle aria-label="Switch to dark mode">&#9789;</button>
+      <button class="logoutBtn" type="button" data-logout>Logout</button>
+      <button class="profileBtn" type="button">
+        <span class="profileBtn__icon">P</span>
+        <span class="profileBtn__text">Profile</span>
+      </button>
+    </div>
+  </header>
+
+  <div id="appShell" class="shell shell--assistant">
+    <aside id="appSidebar" class="sidebar">
+      <a class="askAiBtn" href="/ai-assistant">
+        <span class="askAiBtn__spark">*</span>
+        Ask AI
+      </a>
+
+      <hr class="sidebar__divider" />
+
+      <nav class="nav">
+        <a class="nav__item" href="/notes">My Notes</a>
+        <a class="nav__item" href="/study-groups">Study Groups</a>
+        <a class="nav__item" href="/take-quizzes">Take Quizzes</a>
+        <a class="nav__item" href="/explore-topics">Explore Topics</a>
+        <a class="nav__item" href="/discussion-board">Discussion Board</a>
+        <a class="nav__item" href="/analytics">View Analytics</a>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <section class="hero">
+        <h1>Welcome to Spartan Scholars</h1>
+        <p>Your all-in-one study platform for notes, discussions, and AI-powered learning.</p>
+      </section>
+
+      <section class="section">
+        <div class="row g-4">
+          <div class="col-12 col-md-6 col-xl-4">
+            <article class="featureCard h-100">
+              <div class="featureCard__iconWrap"><span class="featureCard__icon">N</span></div>
+              <h2>Notes &amp; Summaries</h2>
+              <p>Create and organize study notes with fast search and tagging.</p>
+              <ul class="bullets">
+                <li><span class="dot dot--green"></span>2 notes saved</li>
+                <li><span class="dot dot--blue"></span>Rich text editor</li>
+                <li><span class="dot dot--blue"></span>Categories &amp; tags</li>
+              </ul>
+              <a class="primaryBtn primaryBtn--link" href="/notes">Get Started <span class="arrow">&rarr;</span></a>
+            </article>
+          </div>
+
+          <div class="col-12 col-md-6 col-xl-4">
+            <article class="featureCard h-100">
+              <div class="featureCard__iconWrap featureCard__iconWrap--purple"><span class="featureCard__icon">D</span></div>
+              <h2>Discussion Board</h2>
+              <p>Join communities, ask questions, and collaborate with peers.</p>
+              <ul class="bullets">
+                <li><span class="dot dot--green"></span>Active communities</li>
+                <li><span class="dot dot--blue"></span>Topic threads</li>
+                <li><span class="dot dot--blue"></span>Peer support</li>
+              </ul>
+              <a class="primaryBtn primaryBtn--link" href="/discussion-board">Get Started <span class="arrow">&rarr;</span></a>
+            </article>
+          </div>
+
+          <div class="col-12 col-md-6 col-xl-4">
+            <article class="featureCard h-100">
+              <div class="featureCard__iconWrap featureCard__iconWrap--gold"><span class="featureCard__icon">*</span></div>
+              <h2>AI Note Summarizer</h2>
+              <p>Turn notes into summaries, flashcards, and key points in seconds.</p>
+              <ul class="bullets">
+                <li><span class="dot dot--green"></span>Auto summaries</li>
+                <li><span class="dot dot--blue"></span>Flashcard generation</li>
+                <li><span class="dot dot--blue"></span>Key concept extraction</li>
+              </ul>
+              <button class="primaryBtn" type="button">Get Started <span class="arrow">&rarr;</span></button>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const shell = document.getElementById("appShell");
+    document.getElementById("sidebarToggle").addEventListener("click", () => {
+      shell.classList.toggle("shell--collapsed");
+    });
+  </script>
+  <script src="theme.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

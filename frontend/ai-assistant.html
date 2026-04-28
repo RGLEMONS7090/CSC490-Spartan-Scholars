@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Study Assistant | Spartan Scholars</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar__left">
+      <button id="assistantSidebarToggle" class="iconBtn" type="button" aria-label="Toggle sidebar">&#9776;</button>
+      <a class="brand brand--link" href="/" aria-label="Go to Spartan Scholars home">
+        <div class="brand__icon">
+          <img class="brand__logo brand__logo--light" src="assets/ChatGPT Image Mar 2, 2026, 02_52_17 PM-Photoroom.png" alt="Spartan Scholars logo" />
+          <img class="brand__logo brand__logo--dark" src="assets/ChatGPT Image Mar 2, 2026, 02_54_16 PM-Photoroom.png" alt="Spartan Scholars logo" />
+        </div>
+        <div class="brand__name">
+          <img class="brand__wordmark brand__wordmark--light" src="assets/ChatGPT Image Mar 2, 2026, 02_52_21 PM-Photoroom.png" alt="Spartan Scholars" />
+          <img class="brand__wordmark brand__wordmark--dark" src="assets/ChatGPT Image Mar 2, 2026, 03_06_15 PM-Photoroom.png" alt="Spartan Scholars" />
+        </div>
+      </a>
+    </div>
+
+    <div class="topbar__right">
+      <button class="iconBtn" type="button" data-theme-toggle aria-label="Switch to dark mode">&#9789;</button>
+      <button class="logoutBtn" type="button" data-logout>Logout</button>
+      <button class="profileBtn" type="button">
+        <span class="profileBtn__icon">P</span>
+        <span class="profileBtn__text">Profile</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="shell shell--assistant">
+    <aside class="sidebar">
+      <a class="askAiBtn askAiBtn--active" href="/ai-assistant" aria-current="page">
+        <span class="askAiBtn__spark">*</span>
+        Ask AI
+      </a>
+
+      <hr class="sidebar__divider" />
+
+      <nav class="nav">
+        <a class="nav__item" href="/notes">My Notes</a>
+        <a class="nav__item" href="/study-groups">Study Groups</a>
+        <a class="nav__item" href="/take-quizzes">Take Quizzes</a>
+        <a class="nav__item" href="/explore-topics">Explore Topics</a>
+        <a class="nav__item" href="/discussion-board">Discussion Board</a>
+        <a class="nav__item" href="/analytics">View Analytics</a>
+      </nav>
+    </aside>
+
+    <main class="main main--assistant">
+      <section class="assistantHeader">
+        <div class="assistantHeader__icon">AI</div>
+        <div>
+          <h1>AI Study Assistant</h1>
+          <p>Ask questions and get instant help</p>
+        </div>
+      </section>
+
+      <section class="assistantNotice">
+        <span class="assistantNotice__icon">i</span>
+        <span>This is an experimental version, answers may not be correct</span>
+      </section>
+
+      <section class="assistantPanel">
+        <div class="assistantPanel__scroll">
+          <div class="assistantEmpty">
+            <div class="assistantEmpty__badge">AI</div>
+            <h2>Start a conversation</h2>
+            <p>Ask me anything about your studies! I can help with homework questions, explain concepts, or suggest study strategies.</p>
+
+            <div class="assistantSuggestions">
+              <button type="button" class="assistantSuggestion">How do I calculate Big O notation?</button>
+              <button type="button" class="assistantSuggestion">Explain photosynthesis in simple terms</button>
+              <button type="button" class="assistantSuggestion">What's the best way to study for exams?</button>
+              <button type="button" class="assistantSuggestion">Help me understand calculus derivatives</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="assistantComposer">
+          <div class="assistantComposer__input" aria-label="Ask me anything about your studies">
+            <span class="assistantComposer__placeholder">Ask me anything about your studies...</span>
+            <button type="button" class="assistantComposer__send" aria-label="Send message">&gt;</button>
+          </div>
+          <p class="assistantComposer__hint">Press Enter to send, Shift + Enter for new line</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const assistantShell = document.querySelector(".shell--assistant");
+    document.getElementById("assistantSidebarToggle").addEventListener("click", () => {
+      assistantShell.classList.toggle("shell--collapsed");
+    });
+  </script>
+  <script src="theme.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
